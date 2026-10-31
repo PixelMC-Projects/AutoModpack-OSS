@@ -3,7 +3,7 @@ package pl.skidam.automodpack.networking;
 import java.util.Objects;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 // credits to fabric api
 public interface PacketSender {
@@ -14,7 +14,7 @@ public interface PacketSender {
      * @param channelName the id of the channel
      * @param buf     the content of the packet
      */
-    ClientboundCustomQueryPacket createPacket(Identifier channelName, FriendlyByteBuf buf);
+    ClientboundCustomQueryPacket createPacket(ResourceLocation channelName, FriendlyByteBuf buf);
 
     /**
      * Sends a packet.
@@ -29,7 +29,7 @@ public interface PacketSender {
      * @param channel the id of the channel
      * @param buf the content of the packet
      */
-    default void sendPacket(Identifier channel, FriendlyByteBuf buf) {
+    default void sendPacket(ResourceLocation channel, FriendlyByteBuf buf) {
         Objects.requireNonNull(channel, "Channel cannot be null");
         Objects.requireNonNull(buf, "Payload cannot be null");
 

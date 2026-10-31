@@ -5,21 +5,13 @@
   "package": "pl.skidam.automodpack.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "core.FabricLoginMixin",
-    "core.LoginQueryRequestS2CPacketMixin",
-    "core.LoginQueryResponseC2SPacketMixin",
-    "core.MinecraftServerMixin",
-    "core.PlayerManagerMixin",
     "core.ServerLoginNetworkHandlerAccessor",
     "core.ServerLoginNetworkHandlerMixin",
-    "core.ServerNetworkIoMixin"
+    "core.OnlineAuthenticationProofMixin"
   ],
   "client": [
-    "core.ClientConnectionAccessor",
     "core.ClientLoginNetworkHandlerAccessor",
-    "core.ClientLoginNetworkHandlerMixin",
-    "core.ConnectScreenMixin",
-    "core.MusicTrackerMixin"
+    "core.ClientLoginNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

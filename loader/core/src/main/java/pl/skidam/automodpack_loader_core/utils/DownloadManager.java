@@ -45,11 +45,7 @@ public class DownloadManager {
 
     /** Queues one object of {@code size} bytes; a source whose body runs past that size fails the attempt. */
     public void download(Path file, String sha1, long size, List<String> urls, Runnable successCallback, Runnable failureCallback) {
-        FileInspection.HashPathPair hashPathPair = new FileInspection.HashPathPair(sha1, file);
-        if (queuedDownloads.containsKey(hashPathPair)) return;
-        queuedDownloads.put(hashPathPair, new QueuedDownload(file, size, urls, 0, successCallback, failureCallback));
-        addedToQueue++;
-        downloadNext();
+        throw new SecurityException("Legacy AutoModpack downloads are disabled in the OSS fork");
     }
 
     private void downloadTask(FileInspection.HashPathPair hashPathPair, QueuedDownload queuedDownload) throws Exception {

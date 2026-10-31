@@ -3,22 +3,22 @@ package pl.skidam.automodpack.client.ui.versioned;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Button;
 /*? if >= 1.20.2 {*/
-import net.minecraft.client.gui.components.SpriteIconButton;
-/*?} else {*/
-/*import net.minecraft.client.gui.components.ImageButton;
-*//*?}*/
+/*import net.minecraft.client.gui.components.SpriteIconButton;
+*//*?} else {*/
+import net.minecraft.client.gui.components.ImageButton;
+/*?}*/
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /*? if >= 1.21.9 {*/
-import net.minecraft.client.input.KeyEvent;
-/*?}*/
+/*import net.minecraft.client.input.KeyEvent;
+*//*?}*/
 
 /*? if >=1.21.6 {*/
-import net.minecraft.client.renderer.RenderPipelines;
-/*?} else if >=1.21.2 {*/
+/*import net.minecraft.client.renderer.RenderPipelines;
+*//*?} else if >=1.21.2 {*/
 /*import net.minecraft.client.renderer.RenderType;
 import java.util.function.Function;
 *//*?}*/
@@ -32,10 +32,10 @@ import net.minecraft.client.gui.components.Tooltip;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiComponent;
 *//*?} elif >=26.1 {*/
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-/*?} else {*/
-/*import net.minecraft.client.gui.GuiGraphics;
-*//*?}*/
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*//*?} else {*/
+import net.minecraft.client.gui.GuiGraphics;
+/*?}*/
 
 import pl.skidam.automodpack.init.Common;
 
@@ -50,23 +50,23 @@ public class VersionedScreen extends Screen {
 	public void render(PoseStack matrix, int mouseX, int mouseY, float delta) {
 		VersionedMatrices matrices = new VersionedMatrices();
 	*//*?} elif >=26.1 {*/
-	@Override
+	/*@Override
 	public void extractRenderState(GuiGraphicsExtractor matrix, int mouseX, int mouseY, float delta) {
 		VersionedMatrices matrices = new VersionedMatrices(matrix);
-	/*?} else {*/
-	/*@Override
+	*//*?} else {*/
+	@Override
 	public void render(GuiGraphics matrix, int mouseX, int mouseY, float delta) {
 		VersionedMatrices matrices = new VersionedMatrices(matrix);
-	*//*?}*/
+	/*?}*/
 
 		// Render background
 		/*? if <1.20.2 {*/
-        /*super.renderBackground(matrices.getContext());
-		*//*?} elif <1.20.6 {*/
+        super.renderBackground(matrices.getContext());
+		/*?} elif <1.20.6 {*/
         /*super.renderBackground(matrices.getContext(), mouseX, mouseY, delta);
 		*//*?} elif >=26.1 {*/
-		super.extractRenderState(matrix, mouseX, mouseY, delta);
-		/*?} else {*/
+		/*super.extractRenderState(matrix, mouseX, mouseY, delta);
+		*//*?} else {*/
 		/*super.render(matrix, mouseX, mouseY, delta);
 		*//*?}*/
 
@@ -74,8 +74,8 @@ public class VersionedScreen extends Screen {
 		versionedRender(matrices, mouseX, mouseY, delta);
 
 		/*? if <1.20.6 {*/
-		/*super.render(matrices.getContext(), mouseX, mouseY, delta);
-		*//*?}*/
+		super.render(matrices.getContext(), mouseX, mouseY, delta);
+		/*?}*/
 	}
 
 	// This method is to be override by the child classes
@@ -95,10 +95,10 @@ public class VersionedScreen extends Screen {
 	/*? if >=1.20 {*/
 	public static void drawCenteredTextWithShadow(VersionedMatrices matrices, Font textRenderer, MutableComponent text, int centerX, int y, int color) {
 		/*? if >=26.1 {*/
-		matrices.getContext().text(textRenderer, text, centerX - textRenderer.width(text) / 2, y, color, true);
-		/*?} else {*/
-		/*matrices.getContext().drawCenteredString(textRenderer, text, centerX, y, color);
-		*//*?}*/
+		/*matrices.getContext().text(textRenderer, text, centerX - textRenderer.width(text) / 2, y, color, true);
+		*//*?} else {*/
+		matrices.getContext().drawCenteredString(textRenderer, text, centerX, y, color);
+		/*?}*/
 	}
 	/*?} else {*/
 	/*public static void drawCenteredTextWithShadow(VersionedMatrices matrices, Font textRenderer, MutableComponent text, int centerX, int y, int color) {
@@ -118,16 +118,16 @@ public class VersionedScreen extends Screen {
     /*?}*/
 
     /*? if >= 1.20.2 {*/
-    public static Button iconButtonWidget(int x, int y, int buttonWidth, int spriteWidth, Button.OnPress onPress, String spritePath) {
+    /*public static Button iconButtonWidget(int x, int y, int buttonWidth, int spriteWidth, Button.OnPress onPress, String spritePath) {
         Button button = SpriteIconButton.builder(Component.empty(), onPress, true).sprite(Common.id(spritePath), spriteWidth, spriteWidth).size(buttonWidth, buttonWidth).build();
         button.setPosition(x, y);
         return button;
     }
-    /*?} else {*/
-    /*public static Button iconButtonWidget(int x, int y, int buttonWidth, int spriteWidth, Button.OnPress onPress, String spritePath) {
+    *//*?} else {*/
+    public static Button iconButtonWidget(int x, int y, int buttonWidth, int spriteWidth, Button.OnPress onPress, String spritePath) {
         return new ImageButton(x, y, buttonWidth, buttonWidth, 0, 0, 0, Common.id("textures/gui/sprites/" + spritePath + ".png"), buttonWidth, buttonWidth, onPress);
     }
-    *//*?}*/
+    /*?}*/
 
     /*? > 1.19.2 {*/
     public static void setTooltip(Button button, Component tooltip) {
@@ -140,7 +140,7 @@ public class VersionedScreen extends Screen {
     *//*?}*/
 
     /*? if <=1.20 {*/
-	/*public static void drawTexture(Identifier textureID, VersionedMatrices matrices, int x, int y, int u, int v, int width, int height, int textureWidth, int textureHeight) {
+	/*public static void drawTexture(ResourceLocation textureID, VersionedMatrices matrices, int x, int y, int u, int v, int width, int height, int textureWidth, int textureHeight) {
 		/^? if <=1.16.5 {^/
 		/^Minecraft.getInstance().getTextureManager().bindTexture(textureID);
 		^//^?} else {^/
@@ -149,20 +149,20 @@ public class VersionedScreen extends Screen {
 		GuiComponent.blit(matrices.getContext(), x, y, u, v, width, height, textureWidth, textureHeight);
 	}
 	*//*?} else {*/
-	public static void drawTexture(Identifier textureID, VersionedMatrices matrices, int x, int y, int u, int v, int width, int height, int textureWidth, int textureHeight) {
+	public static void drawTexture(ResourceLocation textureID, VersionedMatrices matrices, int x, int y, int u, int v, int width, int height, int textureWidth, int textureHeight) {
 		/*? if >=1.21.6 {*/
-		matrices.getContext().blit(RenderPipelines.GUI_TEXTURED, textureID, x, y, u, v, width, height, textureWidth, textureHeight);
-		/*?} elif >=1.21.2 {*/
-		/*Function<Identifier, RenderType> RenderTypes = RenderType::guiTextured;
+		/*matrices.getContext().blit(RenderPipelines.GUI_TEXTURED, textureID, x, y, u, v, width, height, textureWidth, textureHeight);
+		*//*?} elif >=1.21.2 {*/
+		/*Function<ResourceLocation, RenderType> RenderTypes = RenderType::guiTextured;
 		matrices.getContext().blit(RenderTypes, textureID, x, y, u, v, width, height, textureWidth, textureHeight);
 		*//*?} else {*/
-		/*matrices.getContext().blit(textureID, x, y, u, v, width, height, textureWidth, textureHeight);
-		*//*?}*/
+		matrices.getContext().blit(textureID, x, y, u, v, width, height, textureWidth, textureHeight);
+		/*?}*/
 	}
 	/*?}*/
 
     /*? if >= 1.21.9 {*/
-    @Override
+    /*@Override
     public boolean keyPressed(KeyEvent event) {
         return onKeyPress(event.key(), event.scancode(), event.modifiers());
     }
@@ -172,8 +172,8 @@ public class VersionedScreen extends Screen {
         KeyEvent event = new KeyEvent(keyCode, scanCode, modifiers);
         return super.keyPressed(event);
     }
-    /*?} else {*/
-    /*@Override
+    *//*?} else {*/
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return onKeyPress(keyCode, scanCode, modifiers);
     }
@@ -182,5 +182,5 @@ public class VersionedScreen extends Screen {
     public boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
-    *//*?}*/
+    /*?}*/
 }

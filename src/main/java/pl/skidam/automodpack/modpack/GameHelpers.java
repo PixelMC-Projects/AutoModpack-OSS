@@ -5,11 +5,11 @@ import java.net.SocketAddress;
 import java.util.UUID;
 
 /*? if >= 1.21.9 {*/
-import net.minecraft.server.players.NameAndId;
+/*import net.minecraft.server.players.NameAndId;
 import net.minecraft.server.players.UserNameToIdResolver;
-/*?} else {*/
-/*import net.minecraft.server.players.GameProfileCache;
-*//*?}*/
+*//*?} else {*/
+import net.minecraft.server.players.GameProfileCache;
+/*?}*/
 
 import static pl.skidam.automodpack.init.Common.server;
 
@@ -26,7 +26,7 @@ public class GameHelpers {
 
     private static boolean checkPlayerAuthorizedInternal(SocketAddress address, GameProfile profile) {
         var playerManager = server.getPlayerList();
-        var playerId = /*? if >= 1.21.9 {*/new NameAndId(profile);/*?} else {*//*profile;*//*?}*/
+        var playerId = /*? if >= 1.21.9 {*//*new NameAndId(profile);*//*?} else {*/profile;/*?}*/
         if (playerManager.getBans().isBanned(playerId)) {
             return false;
         }
@@ -53,31 +53,31 @@ public class GameHelpers {
 
     private static GameProfile getProfile(UUID uuid, String playerName) {
         /*? if >= 1.21.9 {*/
-        NameAndId nameAndId = new NameAndId(uuid, playerName);
+        /*NameAndId nameAndId = new NameAndId(uuid, playerName);
         UserNameToIdResolver userCache = server.services().nameToIdCache();
         nameAndId = userCache.get(uuid).orElse(nameAndId);
         return new GameProfile(nameAndId.id(), nameAndId.name());
-        /*?} else {*/
-        /*GameProfile profile = new GameProfile(uuid, playerName);
+        *//*?} else {*/
+        GameProfile profile = new GameProfile(uuid, playerName);
         GameProfileCache userCache = server.getProfileCache();
         if (userCache != null) profile = userCache.get(uuid).orElse(profile);
         return profile;
-        *//*?}*/
+        /*?}*/
     }
 
     public static String getPlayerName(GameProfile profile) {
         /*? if >= 1.21.9 {*/
-        return profile.name();
-        /*?} else {*/
-        /*return profile.getName();
-        *//*?}*/
+        /*return profile.name();
+        *//*?} else {*/
+        return profile.getName();
+        /*?}*/
     }
 
     public static UUID getPlayerUUID(GameProfile profile) {
         /*? if >= 1.21.9 {*/
-        return profile.id();
-        /*?} else {*/
-        /*return profile.getId();
-        *//*?}*/
+        /*return profile.id();
+        *//*?} else {*/
+        return profile.getId();
+        /*?}*/
     }
 }

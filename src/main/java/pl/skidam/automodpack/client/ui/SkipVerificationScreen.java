@@ -1,7 +1,7 @@
 package pl.skidam.automodpack.client.ui;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.toasts.SystemToast;
@@ -16,7 +16,7 @@ public class SkipVerificationScreen extends VersionedScreen {
     private final Screen verificationScreen;
     private final Screen parent;
     private final Runnable validatedCallback;
-    private final Toast failedToast = new SystemToast(SystemToast.SystemToastId.PACK_LOAD_FAILURE,
+    private final Toast failedToast = new SystemToast(SystemToast.SystemToastIds.PACK_LOAD_FAILURE,
             VersionedText.translatable("automodpack.validation.skip.failed"), 
             VersionedText.translatable("automodpack.retry"));
     private static final String REQUIRED_TEXT = "I accept the risk";
@@ -60,7 +60,7 @@ public class SkipVerificationScreen extends VersionedScreen {
                 VersionedText.translatable("automodpack.back"),
                 button -> {
                     assert this.minecraft != null;
-                    this.minecraft.gui.setScreen(verificationScreen);
+                    this.minecraft.setScreen(verificationScreen);
                 }
         );
 
@@ -92,17 +92,17 @@ public class SkipVerificationScreen extends VersionedScreen {
         if (input.equals(REQUIRED_TEXT)) {
             confirmButton.active = false;
             if (this.minecraft != null) {
-                this.minecraft.gui.setScreen(parent);
+                this.minecraft.setScreen(parent);
             }
             validatedCallback.run();
         } else {
             GlobalVariables.LOGGER.error("Skip verification text mismatch, try again");
             if (this.minecraft != null) {
                 /*? if > 1.21.1 {*/
-                this.minecraft.gui.toastManager().addToast(failedToast);
-                /*?} else {*/
-                /*this.minecraft.getToasts().addToast(failedToast);
-                *//*?}*/
+                /*this.minecraft.getToastManager().addToast(failedToast);
+                *//*?} else {*/
+                this.minecraft.getToasts().addToast(failedToast);
+                /*?}*/
             }
         }
     }

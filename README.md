@@ -1,91 +1,31 @@
-<h1 align="center">
-    ✨ AutoModpack ✨
-</h1>
-<p align="center">
-    Tired of modpack update headaches? AutoModpack takes care of it!
-    <br/>
-    <br/>
-    <a href="https://www.curseforge.com/minecraft/mc-mods/automodpack"><img src="http://cf.way2muchnoise.eu/639211.svg" alt="CurseForge Downloads"></a>
-    <a href="https://github.com/Skidamek/AutoModpack/releases"><img src="https://img.shields.io/github/downloads/skidamek/automodpack/total?style=round&logo=github" alt="GitHub Total Downloads"></a>
-    <a href="https://modrinth.com/mod/automodpack"><img src="https://img.shields.io/modrinth/dt/k68glP2e?logo=modrinth&label=&style=flat&color=242629" alt="Modrinth Downloads"></a>
-</p>
+# AutoModpack OSS
 
----
+面向 **Minecraft 1.20.1 / Forge 47** 的 AutoModpack 定制版：玩家在已认证的游戏登录连接上获取更新提示，经明确授权后，从私有阿里云 OSS 下载已签名的整合包文件。文件先进入暂存区，玩家手动重启后，才在模组加载前安装。
 
-## 🤯 Ditch the Update Hassle, Dive into Gameplay!
+发布签名私钥仅保存在本地发布机；游戏服务器持有 OSS 只读凭据和独立的服务器身份密钥。客户端预配公钥、OSS 主机和最低发布序号，逐文件检查签名清单中的路径、大小和 SHA-256。游戏服失陷后仍不能签出新的可接受文件；服务器和 OSS 均可能造成不可用，发布私钥失陷则需要人工更换信任配置。
 
-**AutoModpack** is the ultimate Minecraft modification designed to **revolutionize private server modpack management**. Say goodbye to the days of struggling to get everyone on the same version! This mod **automatically synchronizes** players with the server's modpack, making playing with friends incredibly smooth and hassle-free.
+未配置信任时不信任任何服务器。首次授权先展示管理说明，同意按钮等待 10 秒后才可点击，授权绑定服务器身份、发布者、整合包、管理范围版本及协议版本。个人文件冲突会保留并阻止安装；完全相同的文件可以在授权后登记管理。支持撤销授权、停止服务端续签，以及断线后复用已完整校验的暂存文件。不自动重启、退出、启动或重连游戏，不使用上游自更新，不依赖 Manager、额外域名或反向代理。
 
-<p align="center">
-    <a href="https://youtu.be/lPPzaNPn8g8" target="_blank">
-        <img src="https://img.youtube.com/vi/lPPzaNPn8g8/0.jpg" alt="AutoModpack Showcase Video (Outdated)" width="400">
-    </a>
-    <br>
-    <i>(Heads up! This showcase video is a little outdated, but it gives you a good idea of what AutoModpack does!)</i>
-</p>
+部署顺序：
 
-<br>
+1. 将同一 Forge 1.20.1 构建放入客户端与服务端 `mods/`。目前仅做本地开发与自动化验证，尚未完成真实游戏验收。
+2. 在仓库外生成独立的发布密钥和服务器身份密钥；预配客户端 `config/automodpack-oss/trust.json`。默认信任文件为 `{"schema":1,"packs":[]}`。
+3. 配置服务端外部配置路径和 OSS 只读环境变量，使用现有 Minecraft 登录连接提供短期下载授权。
+4. 发布机仅列入已获分发许可的明确文件，核对哈希后构建并上传不可变版本；另一步明确导出、激活发布。游戏服仅采用人工部署的本地版本 pin。
+5. 玩家连接、阅读并同意管理范围，下载后自行重启，再手动加入服务器。
 
-> **Disclaimer:** While AutoModpack is a powerful tool for managing modpacks, the content it downloads (mods, resource packs, etc.) is created by various talented developers. Please remember to respect their work and licenses. Don't use AutoModpack to mass-distribute content without explicit permission, especially for commercial purposes. Always check the licenses of the mods you include in your pack.
+配置与操作见 [部署和发布](docs/oss-deployment.md)，安全边界与协议见 [协议说明](docs/oss-protocol.md)，测试和构建见 [开发验证](docs/oss-testing.md)。示例均使用占位信息，不含生产配置或密钥。
 
-## 🔥 Why AutoModpack is Your New Best Friend
+## English
 
-This isn't just another mod; it's a game-changer for private servers. Here's why:
+An AutoModpack fork for **Minecraft 1.20.1 / Forge 47**. Authenticated Minecraft login queries deliver update metadata and short-lived private Alibaba Cloud OSS download URLs. Players explicitly authorize management; verified files are staged and installed before mod loading on the next manual launch.
 
-*   🔌 **Plug-'n'-Play:** Install the mod, and you're done! Live in perfect sync with the server's modpack forever.
-*   🔄 **Seamless Player Updates:** Players get the latest modpack updates automatically, without manual downloads or disruptions.
-*   🚀 **Effortless Admin Management:** Easily manage mods, configs, resource packs, shaders, and more. Your modpack, your control.
-*   ⚡️ **Direct & Respectful Downloads:** The mod pulls directly from Modrinth and CurseForge APIs, so mod authors get credit for every download.
-*   🔒 **Secure & Speed:** Encrypted, authorized, compressed, quick modpack downloads.
+The local publishing workstation alone holds the release-signing private key. Game servers receive read-only OSS credentials and a separate identity key. Clients pin both public keys, OSS hosts, permitted roots and a minimum release sequence. Signed manifests bind pack/version, consent scope, relative paths, sizes and SHA-256 hashes. A compromised game server cannot authorize new unsigned files. Publisher-key compromise requires a manual trust migration.
 
-## 🛠️ How the Magic Happens
+No configuration means no trusted servers. First consent shows the management details and enables Agree only after 10 seconds. Local edits cause a preserved-file conflict; byte-identical files may be adopted after consent. Consent is revocable, complete staged files survive reconnects, and no automatic restart, exit, launch or reconnect occurs. Upstream self-updating is disabled. No Manager, extra domain or reverse proxy is required.
 
-AutoModpack works by generating a modpack (**metadata file**) on the server, which contains all the files of your modpack. The server then hosts this file and the modpack files.
+Install the supported build on client and server; provision trust locally, configure read-only server access, build an explicitly licensed file list, upload an immutable signed release, then explicitly export/activate it. Servers adopt a manually deployed local release pin at startup. Players consent, download and restart manually. See [deployment](docs/oss-deployment.md), [protocol/security](docs/oss-protocol.md), and [validation](docs/oss-testing.md). Current status is local development and automated verification; real-game acceptance is pending.
 
-When a client connects to the server:
+## Upstream and license
 
-1.  Connection: AutoModpack establishes a secure connection and prompts you to [verify the server's certificate fingerprint](https://moddedmc.wiki/en/project/automodpack/docs/technicals/certificate).
-2.  Direct links: Fetches the APIs for direct downloads of your modpack's files from Modrinth and CurseForge, where possible (mods, resource packs, shaders).
-3.  Modpack download: All files are downloaded to the client's automodpack folder.
-4.  Game restart: AutoModpack loads the modpack, and the client is perfectly synced and ready to play!
-
-On subsequent game launches, AutoModpack checks for updates. If changes are detected, it updates the modpack in the background—no additional restarts are required!
-
-## ⚠️ Security and Trust - Read This!
-
-> With great power comes great responsibility.
-
-Be aware that this mod allows remote servers to download *arbitrary executable* files directly into your game folder. It's crucial to **only use it on servers you absolutely trust**. A malicious server (administrator) *can* include malicious/harmful files.
-
-While AutoModpack itself tries to be as secure as possible, due to the nature of the internet, the creators and contributors of AutoModpack are not responsible for any harm, damage, loss, or issues that may result from files downloaded from a server you connect to using the mod. **By using AutoModpack, you acknowledge and accept this risk.**
-
-**If you have valuable security insights or concerns, please reach out!** You can contact privately on [Discord](https://discordapp.com/users/464522287618457631) or publicly on [Discord server](https://discord.gg/hS6aMyeA9P) or just open an issue on [GitHub](https://github.com/Skidamek/AutoModpack/issues).
-## 🚀 Getting Started is a Breeze!
-
-Installing AutoModpack is as simple as installing any other mod.
-
-1.  Download the AutoModpack from the releases page on [GitHub](https://github.com/Skidamek/AutoModpack/releases), [CurseForge](https://www.curseforge.com/minecraft/mc-mods/automodpack), or [Modrinth](https://modrinth.com/mod/automodpack).
-2.  Place the downloaded file into the `/mods/` folder of both your server and client Minecraft installations.
-3.  Start your server and let AutoModpack generate the initial modpack metadata.
-4.  Connect to your server with the mod installed on your client.
-
-That's typically all you need to do! AutoModpack will automatically create the modpack from your server's mods.
-
-**Want to customize your modpack further?** Add configs, client-side-only mods, and more? **Check out the [documentation](https://moddedmc.wiki/en/project/automodpack/docs)!** There's also a start guide covering more stuff. If you encounter any issues or have questions, feel free to join [Discord server](https://discord.gg/hS6aMyeA9P) or open an issue on [GitHub](https://github.com/Skidamek/AutoModpack/issues).
-
-Prefer an all-in-one solution? You can also use our [modified Fabric installer](https://github.com/Skidamek/AutoModpack-Installer/releases/tag/Latest) which downloads AutoModpack alongside the Fabric loader.
-
-## 🙏 Huge Thanks to Our Supporters!
-
-AutoModpack wouldn't be where it is without the amazing community!
-
-*   **All the fantastic [contributors](https://github.com/Skidamek/AutoModpack/graphs/contributors)** who have helped improve the mod!
-*   **[duckymirror](https://github.com/duckymirror), Juan, cloud, [Merith](https://github.com/Merith-TK), [SettingDust](https://github.com/SettingDust), Suerion, and griffin4cats** for their invaluable help with testing, code, and ideas!
-*   **HyperDraw** for creating the awesome mod icon!
-*   **All the generous supporters on [Ko-fi](https://ko-fi.com/skidam)** - your support means the world!
-
-## 💖 Contribute and Make AutoModpack Even Better!
-
-We love contributions! Whether it's code, bug reports, documentation improvements, or just spreading the word, your help is welcome.
-
-**Ready to contribute? See our [CONTRIBUTING.md](CONTRIBUTING.md) for details!**
+Based on [Skidamek/AutoModpack](https://github.com/Skidamek/AutoModpack), tag `v4.0.7`, commit `8278844b8d198e68bee9d4c2db2dd65744dced36`. The original project and contributors retain their attribution. This fork keeps [LGPL-3.0](LICENSE) and the bundled [third-party notices](LICENSES). It is a separate OSS distribution workflow; upstream installation/update instructions do not describe this fork.

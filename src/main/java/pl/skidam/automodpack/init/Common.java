@@ -1,6 +1,6 @@
 package pl.skidam.automodpack.init;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import pl.skidam.automodpack.loader.GameCall;
 import pl.skidam.automodpack.networking.ModPackets;
@@ -19,56 +19,28 @@ public class Common {
     public static MinecraftServer server = null;
 
     public static void serverInit() {
-        if (serverConfig.generateModpackOnStart) {
-            LOGGER.info("Generating modpack...");
-            long genStart = System.currentTimeMillis();
-            if (modpackExecutor.generateNew()) {
-                LOGGER.info("Modpack generated! took " + (System.currentTimeMillis() - genStart) + "ms");
-            } else {
-                LOGGER.error("Failed to generate modpack!");
-            }
-        } else {
-            LOGGER.info("Loading last modpack...");
-            long genStart = System.currentTimeMillis();
-            if (modpackExecutor.loadLast()) {
-                LOGGER.info("Modpack loaded! took " + (System.currentTimeMillis() - genStart) + "ms");
-            } else {
-                LOGGER.error("Failed to load modpack!");
-            }
-        }
-
-        ModPackets.registerS2CPackets();
+        pl.skidam.automodpack_core.oss.server.OssServerRuntime.startFromEnvironment();
     }
 
     public static void init() {
         GAME_CALL = new GameCall();
-        hostServer = new NettyServer();
-        modpackExecutor = new ModpackExecutor();
+        // OSS fork: never instantiate the upstream local pack generator/file host.
     }
 
     public static void afterSetupServer() {
-        if (LOADER_MANAGER.getEnvironmentType() != LoaderManagerService.EnvironmentType.SERVER) {
-            return;
-        }
-
-        hostServer.start();
+        // File delivery is exclusively OSS. No embedded Netty file host is started.
     }
 
     public static void beforeShutdownServer() {
-        if (LOADER_MANAGER.getEnvironmentType() != LoaderManagerService.EnvironmentType.SERVER) {
-            return;
-        }
-
-        hostServer.stop();
-        modpackExecutor.stop();
+        pl.skidam.automodpack_core.oss.server.OssServerRuntime.stop();
     }
 
-    public static Identifier id(String path) {
+    public static ResourceLocation id(String path) {
         /*? if >=1.21.11 {*/
-        return Identifier.tryBuild(MOD_ID, path);
-        /*?} else if >=1.19.2 {*/
         /*return ResourceLocation.tryBuild(MOD_ID, path);
-        *//*?} else {*/
+        *//*?} else if >=1.19.2 {*/
+        return ResourceLocation.tryBuild(MOD_ID, path);
+        /*?} else {*/
         /*return new ResourceLocation(MOD_ID, path);
         *//*?}*/
     }

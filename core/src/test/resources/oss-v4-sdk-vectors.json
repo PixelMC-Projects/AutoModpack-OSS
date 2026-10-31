@@ -1,0 +1,75 @@
+{
+  "source": "alibabacloud-oss-v2 SignerV4; fixed synthetic credentials; no network",
+  "signingTime": "2026-01-02T03:04:05Z",
+  "vectors": [
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/a.jar",
+      "token": "",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-signature": "fe5874166284a5df43ee3cce170c90bafbd799d7ec996989deec651037643d19"
+      }
+    },
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/a.jar",
+      "token": "fake-sts+/=token%中文",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-security-token": "fake-sts+/=token%中文",
+        "x-oss-signature": "26bc48bea6de6ab1d82b4916222abd2458eef1860e4147602c4e34ec6ae21738"
+      }
+    },
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC%2B%E7%99%BE%E5%88%86%E5%8F%B7%25.jar",
+      "token": "",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-signature": "90c19e40024f3613c023df541bd67b7027ff2afe9bad7b3dfa2665006b39d9f3"
+      }
+    },
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC%2B%E7%99%BE%E5%88%86%E5%8F%B7%25.jar",
+      "token": "fake-sts+/=token%中文",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-security-token": "fake-sts+/=token%中文",
+        "x-oss-signature": "81f62bfd011eb32101452cb47d18fa1cd2e96a1f615135eff495fa333e82ed64"
+      }
+    },
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/percent%252Fplus%2Bspace%20.jar",
+      "token": "",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-signature": "a2e2ad43d52b8331e588be06fb1f1bec1bcb756e10852a1b235955ea600072e3"
+      }
+    },
+    {
+      "canonical": "https://example-bucket.oss-cn-hangzhou.aliyuncs.com/releases/r1/mods/percent%252Fplus%2Bspace%20.jar",
+      "token": "fake-sts+/=token%中文",
+      "expected": {
+        "x-oss-signature-version": "OSS4-HMAC-SHA256",
+        "x-oss-date": "20260102T030405Z",
+        "x-oss-expires": "180",
+        "x-oss-credential": "fake-key-id/20260102/cn-hangzhou/oss/aliyun_v4_request",
+        "x-oss-security-token": "fake-sts+/=token%中文",
+        "x-oss-signature": "6cc15309187b7ce0677721260f7ee2284bb75bedb5a3897bc31e58943bf5a03b"
+      }
+    }
+  ]
+}

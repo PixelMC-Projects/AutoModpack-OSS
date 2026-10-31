@@ -53,14 +53,7 @@ public class ModpackUpdater {
     }
 
     public ModpackUpdater(Jsons.ModpackContentFields modpackContent, Jsons.ModpackAddresses modpackAddresses, Secrets.Secret secret, Path modpackPath) {
-        this.serverModpackContent = modpackContent;
-        this.modpackAddresses = modpackAddresses;
-        this.modpackSecret = secret;
-        this.modpackDir = modpackPath;
-
-        if (this.modpackAddresses == null || this.modpackAddresses.isAnyEmpty()) {
-            throw new IllegalArgumentException("modpackAddresses is null or empty");
-        }
+        throw new SecurityException("Legacy AutoModpack file management is disabled in this OSS fork");
     }
 
     public void processModpackUpdate(ModpackUtils.UpdateCheckResult result) {

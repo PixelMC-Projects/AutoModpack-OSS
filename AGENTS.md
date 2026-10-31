@@ -1,0 +1,8 @@
+# Project working rules
+
+- Keep this repository generic. Never commit live server names, addresses, bucket names, account lists, public/private production keys, credentials, generated trust/consent files, private operator profiles or machine-specific absolute paths.
+- No trust configuration means no trusted servers. Do not introduce trust-on-first-use, server-supplied keys, unsigned manifests, alternate download hosts, automatic process control or the ordinary upstream self-updater.
+- Supported target is Minecraft 1.20.1 / Forge 47 with Java 17 bytecode. Preserve LGPL-3.0 and upstream attribution. Keep implementation/test detail in docs and keep README focused on purpose/deployment.
+- The optional site-local operator entry is discovered through the **process environment** `AUTOMODPACK_OSS_OPERATOR_HOME`, which names a user-private directory outside Git. Its `Publish-Modpack.ps1` reads the private profile and credential CSV without displaying secret values. Do not copy its contents or concrete private paths into this repository.
+- For an authorized upload, use that entry with an explicit, licensed per-file release specification. `-DryRun` validates without network access or key generation. The normal entry only builds, immutably uploads and exports a local server release pin; remote activation and applying a server version remain separate explicit operations.
+- Keep any machine-specific change record required by parent instructions outside this repository. Distinguish local tests/builds, uploaded objects, manual server pin application and real-game acceptance. Never claim one establishes another.

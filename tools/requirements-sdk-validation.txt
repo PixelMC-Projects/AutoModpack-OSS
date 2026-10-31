@@ -1,0 +1,3 @@
+# Optional only for regenerating official, fake-key signing vectors; no runtime upload dependency.
+-r requirements.txt
+alibabacloud-oss-v2==1.4.1

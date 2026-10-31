@@ -4,8 +4,8 @@ import io.netty.buffer.Unpooled;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.protocol.login.ServerboundCustomQueryPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +29,7 @@ public class ServerLoginNetworkAddon implements PacketSender {
     private final Connection connection;
     private final MinecraftServer server;
     private final Collection<Future<?>> synchronizers = new ConcurrentLinkedQueue<>();
-    public final Map<Integer, Identifier> channels = new ConcurrentHashMap<>();
+    public final Map<Integer, ResourceLocation> channels = new ConcurrentHashMap<>();
     private boolean firstTick = true;
 
     public ServerLoginNetworkAddon(ServerLoginPacketListenerImpl serverLoginNetworkHandler) {
@@ -70,7 +70,7 @@ public class ServerLoginNetworkAddon implements PacketSender {
      * @param packet the packet to handle
      * @return true if the packet was handled
      */
-    public boolean handle(ServerboundCustomQueryAnswerPacket packet) {
+    public boolean handle(ServerboundCustomQueryPacket packet) {
         LoginQueryParser loginQuery = new LoginQueryParser(packet);
         if (loginQuery.success) return handle(loginQuery.queryId, loginQuery.buf);
         return false;
@@ -78,7 +78,7 @@ public class ServerLoginNetworkAddon implements PacketSender {
 
     private boolean handle(int queryId, @Nullable FriendlyByteBuf originalBuf) {
 
-        Identifier channel = this.channels.remove(queryId);
+        ResourceLocation channel = this.channels.remove(queryId);
 
         if (channel == null) {
             // Not an AutoModpack packet.
@@ -105,14 +105,14 @@ public class ServerLoginNetworkAddon implements PacketSender {
     }
 
     @Override
-    public ClientboundCustomQueryPacket createPacket(Identifier channelName, FriendlyByteBuf buf) {
+    public ClientboundCustomQueryPacket createPacket(ResourceLocation channelName, FriendlyByteBuf buf) {
         Integer queryId = LoginNetworkingIDs.getByKey(channelName);
 
         if (queryId == null) {
             return null;
         }
 
-        return new ClientboundCustomQueryPacket(queryId, /*? if <1.20.2 {*/ /*channelName, buf *//*?} else {*/ new LoginRequestPayload(channelName, buf) /*?}*/);
+        return new ClientboundCustomQueryPacket(queryId, /*? if <1.20.2 {*/ channelName, buf /*?} else {*/ /*new LoginRequestPayload(channelName, buf) *//*?}*/);
     }
 
     @Override

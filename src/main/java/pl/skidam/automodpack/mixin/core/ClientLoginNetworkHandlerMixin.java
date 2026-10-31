@@ -3,39 +3,27 @@ package pl.skidam.automodpack.mixin.core;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+import net.minecraft.network.chat.Component;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import pl.skidam.automodpack.networking.client.ClientLoginNetworkAddon;
+import pl.skidam.automodpack.client.oss.OssLoginSession;
 
 @Mixin(value = ClientHandshakePacketListenerImpl.class, priority = 300)
-public class ClientLoginNetworkHandlerMixin {
+public abstract class ClientLoginNetworkHandlerMixin {
     @Shadow @Final private Minecraft minecraft;
-    @Unique
-    private ClientLoginNetworkAddon autoModpack$addon;
-
+    @Unique private OssLoginSession automodpack$oss;
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void initAddon(CallbackInfo ci) {
-        this.autoModpack$addon = new ClientLoginNetworkAddon((ClientHandshakePacketListenerImpl) (Object) this, this.minecraft);
+    private void ossInit(CallbackInfo ci) {
+        automodpack$oss = new OssLoginSession(minecraft,
+            ((ClientLoginNetworkHandlerAccessor) this).getConnection());
     }
-
-    @Inject(
-            method = "handleCustomQuery",
-            at = @At(value = "HEAD"),
-            cancellable = true
-    )
-    private void handleQueryRequest(ClientboundCustomQueryPacket packet, CallbackInfo ci) {
-        if (this.autoModpack$addon == null) {
-            return;
-        }
-
-        if (this.autoModpack$addon.handlePacket(packet)) {
-            // We have handled it, cancel vanilla behavior
-            ci.cancel();
-        }
+    @Inject(method = "handleCustomQuery", at = @At("HEAD"), cancellable = true)
+    private void ossQuery(ClientboundCustomQueryPacket packet, CallbackInfo ci) {
+        if (automodpack$oss != null && automodpack$oss.handle(packet)) ci.cancel();
+    }
+    @Inject(method = "onDisconnect", at = @At("RETURN"))
+    private void ossDisconnect(Component reason, CallbackInfo ci) {
+        if (automodpack$oss != null) automodpack$oss.onDisconnected();
     }
 }

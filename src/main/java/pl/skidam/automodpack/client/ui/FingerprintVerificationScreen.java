@@ -1,7 +1,7 @@
 package pl.skidam.automodpack.client.ui;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.toasts.SystemToast;
@@ -18,8 +18,8 @@ public class FingerprintVerificationScreen extends VersionedScreen {
     private final Runnable validatedCallback;
     private final Runnable canceledCallback;
     private boolean validated = false;
-    private final Toast failedToast = new SystemToast(SystemToast.SystemToastId.PACK_LOAD_FAILURE, 
-            VersionedText.translatable("automodpack.validation.failed"), 
+    private final Toast failedToast = new SystemToast(SystemToast.SystemToastIds.PACK_LOAD_FAILURE,
+            VersionedText.translatable("automodpack.validation.failed"),
             VersionedText.translatable("automodpack.retry"));
     private EditBox textField;
     private Button backButton;
@@ -51,7 +51,7 @@ public class FingerprintVerificationScreen extends VersionedScreen {
 
     public void initWidgets() {
         assert this.minecraft != null;
-        
+
         // Text field for fingerprint input (same size as skip screen)
         this.textField = new EditBox(this.font, this.width / 2 - 170, this.height / 2 + 15, 340, 20,
                 VersionedText.literal("")
@@ -62,7 +62,7 @@ public class FingerprintVerificationScreen extends VersionedScreen {
         this.backButton = buttonWidget(this.width / 2 - 155, this.height / 2 + 80, 100, 20,
                 VersionedText.translatable("automodpack.back"),
                 button -> {
-                    this.minecraft.gui.setScreen(parent);
+                    this.minecraft.setScreen(parent);
                     if (!this.validated) {
                         this.canceledCallback.run();
                     }
@@ -74,7 +74,7 @@ public class FingerprintVerificationScreen extends VersionedScreen {
                 VersionedText.translatable("automodpack.skip"),
                 button -> {
                     assert this.minecraft != null;
-                    this.minecraft.gui.setScreen(new SkipVerificationScreen(this, this.parent, this.validatedCallback));
+                    this.minecraft.setScreen(new SkipVerificationScreen(this, this.parent, this.validatedCallback));
                 });
 
         // Verify button (right - primary action, bold)
@@ -92,22 +92,22 @@ public class FingerprintVerificationScreen extends VersionedScreen {
 
     private void verifyFingerprint() {
         String input = textField.getValue().strip();
-        
+
         if (input.equals(serverFingerprint)) {
             verifyButton.active = false;
             this.validated = true;
             if (this.minecraft != null) {
-                this.minecraft.gui.setScreen(parent);
+                this.minecraft.setScreen(parent);
             }
             validatedCallback.run();
         } else {
             GlobalVariables.LOGGER.error("Server fingerprint validation failed, try again");
             if (this.minecraft != null) {
                 /*? if > 1.21.1 {*/
-                this.minecraft.gui.toastManager().addToast(failedToast);
-                /*?} else {*/
-                /*this.minecraft.getToasts().addToast(failedToast);
-                *//*?}*/
+                /*this.minecraft.getToastManager().addToast(failedToast);
+                *//*?} else {*/
+                this.minecraft.getToasts().addToast(failedToast);
+                /*?}*/
             }
         }
     }
@@ -123,34 +123,34 @@ public class FingerprintVerificationScreen extends VersionedScreen {
     @Override
     public void versionedRender(VersionedMatrices matrices, int mouseX, int mouseY, float delta) {
         int lineHeight = 12; // Consistent line spacing
-        
+
         // Title
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.translatable("automodpack.validation.title").withStyle(ChatFormatting.BOLD),
                 this.width / 2, this.height / 2 - 85, TextColors.WHITE);
 
         // Description line 1
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.translatable("automodpack.validation.description1"),
                 this.width / 2, this.height / 2 - 65, TextColors.WHITE);
 
         // Description line 2
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.translatable("automodpack.validation.description2"),
                 this.width / 2, this.height / 2 - 65 + lineHeight, TextColors.WHITE);
 
         // Server fingerprint label
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.translatable("automodpack.validation.fingerprint.label"),
                 this.width / 2, this.height / 2 - 35, TextColors.WHITE);
 
         // Server fingerprint value (concatenated, gray, not bold - intentionally harder to read)
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.literal(getConcatenatedFingerprint()),
                 this.width / 2, this.height / 2 - 35 + lineHeight, TextColors.LIGHT_GRAY);
 
         // Confirmation text
-        drawCenteredTextWithShadow(matrices, this.font, 
+        drawCenteredTextWithShadow(matrices, this.font,
                 VersionedText.translatable("automodpack.validation.confirm.text"),
                 this.width / 2, this.height / 2 - 15 + lineHeight, TextColors.WHITE);
     }

@@ -4,9 +4,9 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 /*? if >= 1.21.11 {*/
-import net.minecraft.server.permissions.Permission;
+/*import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
-/*?}*/
+*//*?}*/
 import pl.skidam.automodpack.client.ui.versioned.VersionedCommandSource;
 import pl.skidam.automodpack.client.ui.versioned.VersionedText;
 import pl.skidam.automodpack_core.auth.SecretsStore;
@@ -14,7 +14,7 @@ import pl.skidam.automodpack_core.config.ConfigTools;
 import pl.skidam.automodpack_core.config.Jsons;
 import java.util.Set;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
@@ -31,37 +31,37 @@ public class Commands {
                 literal("automodpack")
                         .executes(Commands::about)
                         .then(literal("generate")
-                                .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                .requires((source) -> source.hasPermission(3))
                                 .executes(Commands::generateModpack)
                         )
                         .then(literal("host")
-                                .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                .requires((source) -> source.hasPermission(3))
                                 .executes(Commands::modpackHostAbout)
                                 .then(literal("start")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::startModpackHost)
                                 )
                                 .then(literal("stop")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::stopModpackHost)
                                 )
                                 .then(literal("restart")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::restartModpackHost)
                                 )
                                 .then(literal("connections")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::connections)
                                 )
                                 .then(literal("fingerprint")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::fingerprint)
                                 )
                         )
                         .then(literal("config")
-                                .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                .requires((source) -> source.hasPermission(3))
                                 .then(literal("reload")
-                                        .requires((source) -> source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(3))))
+                                        .requires((source) -> source.hasPermission(3))
                                         .executes(Commands::reload)
                                 )
                         )
@@ -79,12 +79,12 @@ public class Commands {
         if (fingerprint != null) {
             MutableComponent fingerprintText = VersionedText.literal(fingerprint).withStyle(style -> style
                     /*? if >=1.21.5 {*/
-                    .withHoverEvent(new HoverEvent.ShowText(VersionedText.translatable("chat.copy.click")))
+                    /*.withHoverEvent(new HoverEvent.ShowText(VersionedText.translatable("chat.copy.click")))
                     .withClickEvent(new ClickEvent.CopyToClipboard(fingerprint)));
-                     /*?} else {*/
-                    /*.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, VersionedText.translatable("chat.copy.click")))
+                     *//*?} else {*/
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, VersionedText.translatable("chat.copy.click")))
                     .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, fingerprint)));
-            *//*?}*/
+            /*?}*/
             send(context, "Certificate fingerprint", ChatFormatting.WHITE, fingerprintText, ChatFormatting.YELLOW, false);
         } else {
             send(context, "Certificate fingerprint is not available. Make sure the server is running with TLS enabled.", ChatFormatting.RED, false);

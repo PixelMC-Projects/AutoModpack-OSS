@@ -41,3 +41,11 @@ output/
 /core/automodpack/
 
 dupes
+
+# Local runtime and language/build caches; never version private operator data.
+__pycache__/
+*.py[cod]
+.kotlin/
+.automodpack-oss/
+/config/automodpack-oss/
+/operator-local/

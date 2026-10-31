@@ -11,7 +11,10 @@ import pl.skidam.automodpack_loader_core_forge.mods.ModpackLoader;
 public class EarlyModLocator extends AbstractJarFileModLocator {
 
     @Override
-    public void initArguments(Map<String, ?> arguments) {}
+    public void initArguments(Map<String, ?> arguments) {
+        // ALL locators are initialized before discoverMods invokes any candidate scan.
+        new Preload(net.minecraftforge.fml.loading.FMLPaths.GAMEDIR.get());
+    }
 
     @Override
     public String name() {
@@ -20,8 +23,6 @@ public class EarlyModLocator extends AbstractJarFileModLocator {
 
     @Override
     public Stream<Path> scanCandidates() {
-        new Preload();
-
-        return ModpackLoader.modsToLoad.stream();
+        return Stream.empty(); // Standard Forge locator discovers the applied mods folder.
     }
 }

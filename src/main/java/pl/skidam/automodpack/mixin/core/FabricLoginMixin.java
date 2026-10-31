@@ -2,7 +2,7 @@ package pl.skidam.automodpack.mixin.core;
 
 import net.fabricmc.fabric.impl.networking.server.ServerLoginNetworkAddon;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,10 +21,10 @@ public class FabricLoginMixin {
     )
     private void dontRemoveAutoModpackChannels(ClientboundCustomQueryPacket packet, CallbackInfo ci) {
         /*? if <1.20.2 {*/
-        /*ResourceLocation id = packet.getIdentifier();
-        *//*?} else {*/
-        Identifier id = packet.payload().id();
-        /*?}*/
+        ResourceLocation id = packet.getIdentifier();
+        /*?} else {*/
+        /*ResourceLocation id = packet.payload().id();
+        *//*?}*/
         // Cancel if it's one of our channels
         if (LoginNetworkingIDs.getByKey(id) != null) {
             ci.cancel();

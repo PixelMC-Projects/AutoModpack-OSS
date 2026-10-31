@@ -1,7 +1,7 @@
 package pl.skidam.automodpack.client.ui;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import pl.skidam.automodpack.client.audio.AudioManager;
@@ -78,7 +78,7 @@ public class DangerScreen extends VersionedScreen {
             140,
             20,
             VersionedText.translatable("automodpack.danger.cancel").withStyle(ChatFormatting.BOLD),
-            button -> this.minecraft.gui.setScreen(parent)
+            button -> this.minecraft.setScreen(parent)
         );
         this.addRenderableWidget(this.cancelButton);
 

@@ -1,0 +1,2 @@
+# Runtime publisher/test dependency. OSS V4 uses the Python standard library.
+cryptography==50.0.2

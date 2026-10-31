@@ -1,0 +1,99 @@
+{
+  "testOnly": true,
+  "generatedBy": "alibabacloud-oss-v2 1.4.1",
+  "signingTime": "2026-01-01T00:00:00+00:00",
+  "bucket": "fixture-bucket",
+  "region": "cn-example",
+  "keyId": "fixture-key",
+  "secret": "fixture-secret",
+  "vectors": [
+    {
+      "method": "GET",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/example/active.json",
+      "headers": {},
+      "securityToken": null,
+      "expectedHeaders": {
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=8a8fcb45b953eace7942971d423a451bc117ff38b455bef3b41581d41981a26d"
+      }
+    },
+    {
+      "method": "PUT",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/example/releases/r1/files/mods/a.jar",
+      "headers": {
+        "Content-Type": "application/octet-stream",
+        "Content-Length": "7",
+        "x-oss-forbid-overwrite": "true",
+        "x-oss-meta-sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "securityToken": null,
+      "expectedHeaders": {
+        "Content-Type": "application/octet-stream",
+        "Content-Length": "7",
+        "x-oss-forbid-overwrite": "true",
+        "x-oss-meta-sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=ac3875407a89daf1fb2980086246bdca08369cbc33d3297ba1b454ba6cbbad0c"
+      }
+    },
+    {
+      "method": "GET",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/%E4%B8%AD%E6%96%87/a%20%2B%25.jar",
+      "headers": {},
+      "securityToken": "fixture-token+/%==",
+      "expectedHeaders": {
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-security-token": "fixture-token+/%==",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=40eca93b4aeea01c0cd835664bb5459b58ed13e002f2d550e527e9843b2d354b"
+      }
+    },
+    {
+      "method": "PUT",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/metadata.json",
+      "headers": {
+        "Content-Type": "application/json",
+        "x-oss-forbid-overwrite": "true"
+      },
+      "securityToken": "fixture-token+/%==",
+      "expectedHeaders": {
+        "Content-Type": "application/json",
+        "x-oss-forbid-overwrite": "true",
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-security-token": "fixture-token+/%==",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=04421bedb46d46ffdcb058e1afdda4490891cac3cbb2fb75558c2f23161d6860"
+      }
+    },
+    {
+      "method": "HEAD",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/example/releases/r1/manifest.json",
+      "headers": {},
+      "securityToken": null,
+      "expectedHeaders": {
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=188af919b7c90d42349c0941e051f60956e80b6434503f5e1f1f5d6c6ea5d756"
+      }
+    },
+    {
+      "method": "GET",
+      "url": "https://fixture-bucket.oss-cn-example.aliyuncs.com/packs/a_b/colon%3Aname.jar",
+      "headers": {},
+      "securityToken": null,
+      "expectedHeaders": {
+        "x-oss-date": "20260101T000000Z",
+        "Date": "Thu, 01 Jan 2026 00:00:00 GMT",
+        "x-oss-content-sha256": "UNSIGNED-PAYLOAD",
+        "Authorization": "OSS4-HMAC-SHA256 Credential=fixture-key/20260101/cn-example/oss/aliyun_v4_request,Signature=2d4dc718f0f8775795871c898aa75cc30c14e1c0c3d0858d5a2b3def333a95b8"
+      }
+    }
+  ]
+}

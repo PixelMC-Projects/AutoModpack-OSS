@@ -3,7 +3,7 @@ package pl.skidam.automodpack.client.ui;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -83,7 +83,7 @@ public class ChangelogScreen extends VersionedScreen {
             140,
             20,
             VersionedText.translatable("automodpack.back"),
-            button -> this.minecraft.gui.setScreen(this.parent)
+            button -> this.minecraft.setScreen(this.parent)
         );
 
         this.openMainPageButton = buttonWidget(
@@ -108,13 +108,13 @@ public class ChangelogScreen extends VersionedScreen {
     @Override
     public void versionedRender(VersionedMatrices matrices, int mouseX, int mouseY, float delta) {
 		/*? if <26.1 {*/
-        /*this.listEntryWidget.render(
+        this.listEntryWidget.render(
             matrices.getContext(),
             mouseX,
             mouseY,
             delta
         );
-		*//*?}*/
+		/*?}*/
 
         ListEntry selectedEntry = listEntryWidget.getSelected();
         if (selectedEntry != null) {
@@ -193,7 +193,7 @@ public class ChangelogScreen extends VersionedScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         assert this.minecraft != null;
-        this.minecraft.gui.setScreen(this.parent);
+        this.minecraft.setScreen(this.parent);
         return false;
     }
 }

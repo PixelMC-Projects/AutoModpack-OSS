@@ -1,0 +1,36 @@
+name: OSS Forge 1.20.1 checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
+      - name: Install publisher test dependencies
+        run: python -m pip install -r tools/requirements.txt
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test security, consent and authenticated metadata; build the reviewed Forge target
+        run: |
+          chmod +x gradlew
+          ./gradlew :core:test :1.20.1-forge:build --console=plain
+          python3 -m unittest discover -s tools -p 'test_*.py' -v
+          python3 tools/check_bootstrap_order.py --artifact merged/*.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: automodpack-oss-forge-1.20.1-local-candidate
+          path: merged/*.jar
+          if-no-files-found: error
+# Publication is deliberately manual. No upstream Modrinth/CurseForge/release tokens are used.
