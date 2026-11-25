@@ -1,6 +1,7 @@
 package pl.skidam.automodpack_core.oss.client;
 
 import com.google.gson.Gson;
+import pl.skidam.automodpack_core.oss.ReleaseChannel;
 import pl.skidam.automodpack_core.oss.VerifiedManifest;
 import pl.skidam.automodpack_core.oss.SafePaths;
 import java.io.IOException;
@@ -12,46 +13,107 @@ public final class ConsentStore {
     private static final Gson JSON = new Gson();
     private final Path file;
     private State state;
+
     private static final class State {
         int schema = 1;
         boolean enabled = true;
+        String channel = ReleaseChannel.STABLE.id();
         List<ConsentGrant> grants = new ArrayList<>();
     }
+
     public ConsentStore(Path gameRoot) throws IOException {
         file = gameRoot.resolve("config/automodpack-oss/consent.json");
         SafePaths.requireNoLinks(file);
-        if (!Files.exists(file)) { state = new State(); return; }
+        if (!Files.exists(file)) {
+            state = new State();
+            return;
+        }
         try {
             SafePaths.requireRegularFile(file);
             if (Files.size(file) > 1_048_576) throw new IOException("Invalid consent store");
             state = JSON.fromJson(Files.readString(file), State.class);
-            if (state == null || state.schema != 1 || state.grants == null) throw new IOException("Invalid consent store");
+            if (state == null || state.schema != 1 || state.grants == null)
+                throw new IOException("Invalid consent store");
+            if (state.channel == null || state.channel.isBlank()) {
+                state.channel = ReleaseChannel.STABLE.id();
+            } else {
+                state.channel = ReleaseChannel.parse(state.channel).id();
+            }
             for (ConsentGrant grant : state.grants) {
-                Objects.requireNonNull(grant.publisherIdentity()); Objects.requireNonNull(grant.serverIdentity());
-                Objects.requireNonNull(grant.packId()); Objects.requireNonNull(grant.scopeVersion());
+                Objects.requireNonNull(grant.publisherIdentity());
+                Objects.requireNonNull(grant.serverIdentity());
+                Objects.requireNonNull(grant.packId());
+                Objects.requireNonNull(grant.scopeVersion());
                 Objects.requireNonNull(grant.rootScope());
                 UUID.fromString(grant.accountUuid());
                 if (grant.protocolVersion() <= 0) throw new IOException("Invalid consent protocol");
             }
-        } catch (RuntimeException e) { throw new IOException("Invalid consent store", e); }
+        } catch (RuntimeException e) {
+            throw new IOException("Invalid consent store", e);
+        }
     }
-    public synchronized boolean enabled() { return state.enabled; }
+
+    public synchronized boolean enabled() {
+        return state.enabled;
+    }
+
+    public synchronized ReleaseChannel channel() {
+        return ReleaseChannel.parseOrFallback(state.channel);
+    }
+
+    public synchronized boolean permitsChannel(ReleaseChannel manifestChannel) {
+        ReleaseChannel chosen = channel();
+        if (chosen == ReleaseChannel.STABLE) {
+            return manifestChannel == ReleaseChannel.STABLE;
+        }
+        return manifestChannel == ReleaseChannel.PREVIEW
+                || manifestChannel == ReleaseChannel.STABLE;
+    }
+
     public synchronized boolean permits(VerifiedManifest manifest, UUID account) {
-        return state.enabled && state.grants.contains(ConsentGrant.forManifest(manifest, account));
+        return state.enabled
+                && permitsChannel(manifest.channel())
+                && state.grants.contains(ConsentGrant.forManifest(manifest, account));
     }
+
     public synchronized boolean hasAnyGrant(VerifiedManifest manifest) {
-        return state.enabled && state.grants.stream().anyMatch(g -> g.covers(manifest));
+        return state.enabled
+                && permitsChannel(manifest.channel())
+                && state.grants.stream().anyMatch(g -> g.covers(manifest));
     }
-    public synchronized int grantCount() { return state.grants.size(); }
+
+    public synchronized int grantCount() {
+        return state.grants.size();
+    }
+
     public synchronized void grant(VerifiedManifest manifest, UUID account) throws IOException {
         state.enabled = true;
         ConsentGrant grant = ConsentGrant.forManifest(manifest, account);
-        state.grants.removeIf(g -> g.packId().equals(grant.packId()) && g.accountUuid().equals(grant.accountUuid()));
+        state.grants.removeIf(
+                g ->
+                        g.packId().equals(grant.packId())
+                                && g.accountUuid().equals(grant.accountUuid()));
         state.grants.add(grant);
         save();
     }
-    public synchronized void setEnabled(boolean enabled) throws IOException { state.enabled = enabled; save(); }
-    public synchronized void revokeAll() throws IOException { state.grants.clear(); state.enabled = false; save(); }
+
+    public synchronized void setEnabled(boolean enabled) throws IOException {
+        state.enabled = enabled;
+        save();
+    }
+
+    public synchronized void setChannel(ReleaseChannel channel) throws IOException {
+        Objects.requireNonNull(channel, "channel");
+        state.channel = channel.id();
+        save();
+    }
+
+    public synchronized void revokeAll() throws IOException {
+        state.grants.clear();
+        state.enabled = false;
+        save();
+    }
+
     private void save() throws IOException {
         SafePaths.requireNoLinks(file);
         Files.createDirectories(file.getParent());
@@ -59,7 +121,13 @@ public final class ConsentStore {
         try {
             Files.writeString(temporary, JSON.toJson(state));
             SafePaths.requireNoLinks(file);
-            Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } finally { Files.deleteIfExists(temporary); }
+            Files.move(
+                    temporary,
+                    file,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 }

@@ -11,22 +11,40 @@ public final class ConsentCountdown {
     private long shownAt;
     private boolean shown;
 
-    public ConsentCountdown() { this(System::nanoTime, Duration.ofSeconds(10)); }
+    public ConsentCountdown() {
+        this(System::nanoTime, Duration.ofSeconds(10));
+    }
+
     public ConsentCountdown(LongSupplier clock, Duration duration) {
         this.clock = clock;
         this.required = duration.toNanos();
         if (required < 0) throw new IllegalArgumentException("negative duration");
     }
+
     public synchronized void shown() {
-        if (!shown) { shownAt = clock.getAsLong(); shown = true; }
+        if (!shown) {
+            shownAt = clock.getAsLong();
+            shown = true;
+        }
     }
+
     public synchronized void hidden() {
-        if (shown) { accumulated += elapsed(); shown = false; }
+        if (shown) {
+            accumulated += elapsed();
+            shown = false;
+        }
     }
-    private long elapsed() { return Math.max(0, clock.getAsLong() - shownAt); }
+
+    private long elapsed() {
+        return Math.max(0, clock.getAsLong() - shownAt);
+    }
+
     public synchronized long remainingSeconds() {
         long remaining = Math.max(0, required - accumulated - (shown ? elapsed() : 0));
         return (remaining + 999_999_999L) / 1_000_000_000L;
     }
-    public synchronized boolean canAccept() { return shown && remainingSeconds() == 0; }
+
+    public synchronized boolean canAccept() {
+        return shown && remainingSeconds() == 0;
+    }
 }

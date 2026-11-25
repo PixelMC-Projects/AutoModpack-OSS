@@ -51,10 +51,22 @@ class OssProtocolTest {
         return envelope.toString().getBytes(StandardCharsets.UTF_8);
     }
     VerifiedManifest manifest(long sequence, int protocol, String scope, PackTrust localTrust) throws Exception {
-        JsonObject p = new JsonObject(); p.addProperty("schema",1); p.addProperty("packId","fixture-pack"); p.addProperty("releaseId","r"+sequence);
+        return manifest(sequence, protocol, scope, localTrust, ReleaseChannel.STABLE, new byte[0]);
+    }
+    VerifiedManifest manifest(
+            long sequence,
+            int protocol,
+            String scope,
+            PackTrust localTrust,
+            ReleaseChannel channel,
+            byte[] fileBytes)
+            throws Exception {
+        JsonObject p = new JsonObject(); p.addProperty("schema",1); p.addProperty("packId","fixture-pack");
+        p.addProperty("releaseId",(channel == ReleaseChannel.PREVIEW ? "p" : "r")+sequence);
+        p.addProperty("channel",channel.id());
         p.addProperty("sequence",sequence); p.addProperty("consentProtocolVersion",protocol); p.addProperty("managementScopeVersion",scope);
-        p.addProperty("createdAt","2026-01-01T00:00:00Z"); JsonObject f=new JsonObject(); f.addProperty("path","mods/fixture.jar"); f.addProperty("size",0);
-        f.addProperty("sha256",ManifestVerifier.sha256(new byte[0])); f.addProperty("url","https://objects.example.test/releases/r"+sequence+"/fixture.jar");
+        p.addProperty("createdAt","2026-01-01T00:00:00Z"); JsonObject f=new JsonObject(); f.addProperty("path","mods/fixture.jar"); f.addProperty("size",fileBytes.length);
+        f.addProperty("sha256",ManifestVerifier.sha256(fileBytes)); f.addProperty("url","https://objects.example.test/releases/"+p.get("releaseId").getAsString()+"/fixture.jar");
         JsonArray files=new JsonArray(); files.add(f); p.add("files",files);
         return ManifestVerifier.verify(signed(p,publisher,false),localTrust);
     }
@@ -105,5 +117,42 @@ class OssProtocolTest {
         store.revokeAll(); ConsentStore revoked = new ConsentStore(root);
         assertEquals(StagedInstaller.Status.CONSENT_REQUIRED,StagedInstaller.applyPending(root,new TrustStore(List.of(trust)),revoked::hasAnyGrant).status());
         assertFalse(Files.exists(root.resolve("mods/fixture.jar")));
+    }
+    @Test void previewChannelRequiresOptInAndSupportsSafeSwitchBackToStable() throws Exception {
+        byte[] stableBytes = "stable-v2".getBytes(StandardCharsets.UTF_8);
+        byte[] previewBytes = "preview-v5".getBytes(StandardCharsets.UTF_8);
+        VerifiedManifest stable2 = manifest(2, 1, "scope-1", trust, ReleaseChannel.STABLE, stableBytes);
+        VerifiedManifest stable1 = manifest(1, 1, "scope-1", trust, ReleaseChannel.STABLE, "stable-v1".getBytes(StandardCharsets.UTF_8));
+        VerifiedManifest preview5 = manifest(5, 1, "scope-1", trust, ReleaseChannel.PREVIEW, previewBytes);
+        ConsentStore store = new ConsentStore(root);
+        assertEquals(ReleaseChannel.STABLE, store.channel());
+        store.grant(stable2, account);
+        assertTrue(store.permits(stable2, account));
+        assertFalse(store.permits(preview5, account));
+
+        // Opt into preview channel and install preview sequence 5.
+        store.setChannel(ReleaseChannel.PREVIEW);
+        assertTrue(new ConsentStore(root).permits(preview5, account));
+        var previewStage = StagedInstaller.prepare(root, preview5, preview5.authorityId(), 1, "scope-1", ReleaseChannel.PREVIEW);
+        previewStage.accept(preview5.files().get(0), new ByteArrayInputStream(previewBytes));
+        previewStage.finish();
+        assertEquals(
+                StagedInstaller.Status.APPLIED,
+                StagedInstaller.applyPending(root, new TrustStore(List.of(trust)), new ConsentStore(root)::hasAnyGrant, ReleaseChannel.PREVIEW).status());
+        assertArrayEquals(previewBytes, Files.readAllBytes(root.resolve("mods/fixture.jar")));
+
+        // Switch explicitly back to stable: lower sequence (2 < 5) is allowed across channels,
+        // while same-channel downgrade (2 -> 1) remains strictly blocked.
+        store.setChannel(ReleaseChannel.STABLE);
+        var stableStage = StagedInstaller.prepare(root, stable2, stable2.authorityId(), 1, "scope-1", ReleaseChannel.STABLE);
+        stableStage.accept(stable2.files().get(0), new ByteArrayInputStream(stableBytes));
+        stableStage.finish();
+        assertEquals(
+                StagedInstaller.Status.APPLIED,
+                StagedInstaller.applyPending(root, new TrustStore(List.of(trust)), new ConsentStore(root)::hasAnyGrant, ReleaseChannel.STABLE).status());
+        assertArrayEquals(stableBytes, Files.readAllBytes(root.resolve("mods/fixture.jar")));
+        assertThrows(
+                IOException.class,
+                () -> StagedInstaller.prepare(root, stable1, stable1.authorityId(), 1, "scope-1", ReleaseChannel.STABLE));
     }
 }

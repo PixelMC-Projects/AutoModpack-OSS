@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 ROOTS = {"mods", "config", "resourcepacks", "shaderpacks", "defaultconfigs", "kubejs", "scripts"}
+CHANNELS = ("stable", "preview")
 TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 MAX_FILE = 4 * 1024**3
@@ -58,6 +59,14 @@ def read_json(path):
 def token(value):
     if not isinstance(value, str) or not TOKEN.fullmatch(value):
         raise ValueError("invalid identity/version token")
+    return value
+
+
+def normalize_channel(value):
+    if value is None:
+        return "stable"
+    if not isinstance(value, str) or value not in CHANNELS:
+        raise ValueError("invalid release channel (expected 'stable' or 'preview')")
     return value
 
 
@@ -163,6 +172,8 @@ def validate_manifest(manifest):
         raise ValueError("unsupported manifest schema")
     for key in ("packId", "releaseId", "managementScopeVersion"):
         token(manifest.get(key))
+    if "channel" in manifest:
+        normalize_channel(manifest.get("channel"))
     for key in ("sequence", "consentProtocolVersion"):
         limit = 2**31 - 1 if key == "consentProtocolVersion" else 2**63 - 1
         if type(manifest.get(key)) is not int or manifest[key] <= 0 or manifest[key] > limit:
@@ -259,10 +270,13 @@ def authorized_inputs(args):
         entries.append({"path": path, "size": length, "sha256": sha,
                         "url": base + "/releases/" + release_id + "/files/" + urllib.parse.quote(path, safe="/")})
         sources.append(source)
+    channel = normalize_channel(spec.get("channel"))
     manifest = {"schema": 1, "packId": spec["packId"], "releaseId": release_id,
                 "sequence": spec["sequence"], "consentProtocolVersion": spec["consentProtocolVersion"],
                 "managementScopeVersion": spec["managementScopeVersion"],
                 "createdAt": dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"), "files": entries}
+    if "channel" in spec or channel != "stable":
+        manifest["channel"] = channel
     validate_manifest(manifest)
     estimated = canonical_json({"schema": 1, "payload": base64.b64encode(canonical_json(manifest)).decode("ascii"), "signature": "A" * 88})
     if len(estimated) > MAX_MANIFEST:
@@ -281,6 +295,8 @@ def validate_spec(args):
         for field in ("schema", "packId", "releaseId", "sequence", "consentProtocolVersion", "managementScopeVersion", "files"):
             if actual[field] != expected[field]:
                 raise ValueError("existing signed release does not match authorized spec/profile")
+        if normalize_channel(actual.get("channel")) != normalize_channel(expected.get("channel")):
+            raise ValueError("existing signed release channel does not match authorized spec/profile")
     print("Validated explicit release specification and exact source bytes; no key generation or network access.")
 
 
@@ -446,7 +462,9 @@ def upload(args):
 def activate(args):
     _, raw, public, manifest, plan = local_release(args)
     oss = OSS(args.endpoint, args.bucket, args.region)
-    active_url = plan["baseUrl"] + "/active.json"
+    channel = normalize_channel(manifest.get("channel"))
+    active_name = "active.json" if channel == "stable" else "active-preview.json"
+    active_url = plan["baseUrl"] + "/" + active_name
     # Activation is deliberately a separate operator command, with an expected previous digest.
     try:
         previous = oss.request("GET", active_url)
@@ -459,8 +477,10 @@ def activate(args):
         raise ValueError("active release changed; inspect it before explicit activation")
     if previous is not None:
         old = verify_envelope(previous, public)
-        if old["packId"] != manifest["packId"] or old["sequence"] >= manifest["sequence"]:
-            raise ValueError("activation must advance the same pack sequence")
+        if (old["packId"] != manifest["packId"]
+                or normalize_channel(old.get("channel")) != channel
+                or old["sequence"] >= manifest["sequence"]):
+            raise ValueError("activation must advance the same pack and channel sequence")
     uploaded = oss.request("GET", plan["manifestUrl"])
     if uploaded != raw:
         raise ValueError("immutable remote manifest not uploaded or does not match")
@@ -471,24 +491,27 @@ def activate(args):
     oss.request("PUT", active_url, raw, immutable=previous is None)
     if oss.request("GET", active_url) != raw:
         raise ValueError("active release changed concurrently; inspect OSS before retrying")
-    print("Explicitly activated " + manifest["releaseId"] + ".")
+    print("Explicitly activated " + manifest["releaseId"] + " (" + channel + ").")
 
 
 def export_active(args):
     _, raw, _, manifest, plan = local_release(args)
+    channel = normalize_channel(manifest.get("channel"))
     output = Path(args.output)
-    pin_output = Path(getattr(args, "server_pin_output", None) or output.with_name("server-active-release.json"))
+    default_pin_name = "server-active-release.json" if channel == "stable" else "server-active-preview-release.json"
+    pin_output = Path(getattr(args, "server_pin_output", None) or output.with_name(default_pin_name))
     if output.absolute() == pin_output.absolute() or output.exists() or pin_output.exists():
         raise FileExistsError("activation export paths must be distinct and unused")
     output.parent.mkdir(parents=True, exist_ok=True)
     pin_output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("xb") as target:
         target.write(raw)
-    pin = {"schema": 1, "packId": manifest["packId"], "releaseId": manifest["releaseId"], "sequence": manifest["sequence"],
-           "manifestSha256": hashlib.sha256(raw).hexdigest(), "manifestUrl": plan["manifestUrl"]}
+    pin = {"schema": 1, "packId": manifest["packId"], "channel": channel, "releaseId": manifest["releaseId"],
+           "sequence": manifest["sequence"], "manifestSha256": hashlib.sha256(raw).hexdigest(),
+           "manifestUrl": plan["manifestUrl"]}
     with pin_output.open("xb") as target:
         target.write(canonical_json(pin))
-    print("Exported active envelope and server release pin for " + manifest["releaseId"] + "; nothing uploaded or deployed.")
+    print("Exported active envelope and server release pin for " + manifest["releaseId"] + " (" + channel + "); nothing uploaded or deployed.")
 
 
 def main(argv=None):

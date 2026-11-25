@@ -15,7 +15,10 @@ import static pl.skidam.automodpack_core.GlobalVariables.*;
 
 /** Offline only. Invoked before Forge scans any mod candidates. */
 public final class Preload {
-    public Preload() { this(Path.of("").toAbsolutePath().normalize()); }
+    public Preload() {
+        this(Path.of("").toAbsolutePath().normalize());
+    }
+
     public Preload(Path gameRoot) {
         preload = true;
         LOADER_MANAGER = new LoaderManager();
@@ -28,16 +31,25 @@ public final class Preload {
         clientConfig = new Jsons.ClientConfigFieldsV2();
         serverConfig = new Jsons.ServerConfigFieldsV2();
         knownHosts = new Jsons.KnownHostsFields();
-        if (LOADER_MANAGER.getEnvironmentType() != LoaderManagerService.EnvironmentType.CLIENT) return;
+        if (LOADER_MANAGER.getEnvironmentType() != LoaderManagerService.EnvironmentType.CLIENT)
+            return;
         try {
-            TrustStore trust = TrustStore.load(gameRoot.resolve("config/automodpack-oss/trust.json"));
+            TrustStore trust =
+                    TrustStore.load(gameRoot.resolve("config/automodpack-oss/trust.json"));
             ConsentStore consents = new ConsentStore(gameRoot);
-            var result = StagedInstaller.applyPending(gameRoot, trust, consents::hasAnyGrant);
+            var result =
+                    StagedInstaller.applyPending(
+                            gameRoot, trust, consents::hasAnyGrant, consents.channel());
             LOGGER.info("OSS offline pre-load installation: {}", result.status());
-            try { StartupNotice.record(gameRoot, result); }
-            catch (java.io.IOException noticeFailure) { LOGGER.warn("OSS startup notice could not be persisted; current outcome remains visible in settings"); }
+            try {
+                StartupNotice.record(gameRoot, result);
+            } catch (java.io.IOException noticeFailure) {
+                LOGGER.warn(
+                        "OSS startup notice could not be persisted; current outcome remains visible in settings");
+            }
         } catch (Exception failure) {
-            throw new IllegalStateException("OSS installation recovery failed; startup stopped safely", failure);
+            throw new IllegalStateException(
+                    "OSS installation recovery failed; startup stopped safely", failure);
         }
     }
 }

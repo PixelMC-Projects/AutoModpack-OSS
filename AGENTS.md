@@ -6,3 +6,8 @@
 - The optional site-local operator entry is discovered through the **process environment** `AUTOMODPACK_OSS_OPERATOR_HOME`, which names a user-private directory outside Git. Its `Publish-Modpack.ps1` reads the private profile and credential CSV without displaying secret values. Do not copy its contents or concrete private paths into this repository.
 - For an authorized upload, use that entry with an explicit, licensed per-file release specification. `-DryRun` validates without network access or key generation. The normal entry only builds, immutably uploads and exports a local server release pin; remote activation and applying a server version remain separate explicit operations.
 - Keep any machine-specific change record required by parent instructions outside this repository. Distinguish local tests/builds, uploaded objects, manual server pin application and real-game acceptance. Never claim one establishes another.
+
+
+## Java formatting
+
+- Follow `docs/java-formatting.md` and `.java-format.json` for self-owned Java sources. Use `tools/format-java.ps1` to check, or explicitly pass `-Write` to format. Keep behavioral changes separate from formatting changes.

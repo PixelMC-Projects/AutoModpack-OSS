@@ -27,7 +27,7 @@ def verify_source() -> None:
     assert re.search(r"initArguments\([^)]*\)\s*\{[^}]*new Preload\(net\.minecraftforge\.fml\.loading\.FMLPaths\.GAMEDIR\.get\(\)\)", locator, re.S)
     assert "new Preload" not in locator[locator.index("Stream<Path> scanCandidates"):]
     preload = (ROOT / "loader/core/src/main/java/pl/skidam/automodpack_loader_core/Preload.java").read_text(encoding="utf-8")
-    assert "StagedInstaller.applyPending(gameRoot, trust, consents::hasAnyGrant)" in preload
+    assert re.search(r"StagedInstaller\.applyPending\(\s*gameRoot,\s*trust,\s*consents::hasAnyGrant,\s*consents\.channel\(\)\)", preload)
     assert all(x not in preload for x in ("SelfUpdater.update", "ModpackUpdater", "OneCrl", "requestServerModpackContent", "System.exit"))
     mixins = json.loads((ROOT / "src/main/resources/automodpack-main.mixins.json").read_text(encoding="utf-8"))
     assert set(mixins["client"]) == {"core.ClientLoginNetworkHandlerAccessor", "core.ClientLoginNetworkHandlerMixin"}

@@ -8,8 +8,15 @@ import java.time.Duration;
 
 /** The sole client download path. No redirects, mirrors, HTTP, upstream host or fallback. */
 public final class OssDownloads {
+    @FunctionalInterface
+    public interface ProgressListener {
+        void onBytes(long deltaBytes);
+    }
+
     private OssDownloads() {}
-    private static HttpsURLConnection open(PackTrust trust, URI canonical, URI transport) throws IOException {
+
+    private static HttpsURLConnection open(PackTrust trust, URI canonical, URI transport)
+            throws IOException {
         trust.validateTransportUrl(canonical, transport);
         var connection = (HttpsURLConnection) transport.toURL().openConnection();
         connection.setInstanceFollowRedirects(false);
@@ -17,36 +24,84 @@ public final class OssDownloads {
         connection.setReadTimeout(30_000);
         connection.setRequestProperty("Accept-Encoding", "identity");
         try {
-            if (connection.getResponseCode() != 200) throw new IOException("OSS object request refused");
+            if (connection.getResponseCode() != 200)
+                throw new IOException("OSS object request refused");
             String encoding = connection.getContentEncoding();
-            if (encoding != null && !encoding.equalsIgnoreCase("identity")) throw new IOException("Encoded object refused");
+            if (encoding != null && !encoding.equalsIgnoreCase("identity"))
+                throw new IOException("Encoded object refused");
             return connection;
-        } catch (IOException error) { connection.disconnect(); throw error; }
+        } catch (IOException error) {
+            connection.disconnect();
+            throw error;
+        }
     }
-    public static byte[] manifest(PackTrust trust, URI canonical, URI transport) throws IOException {
+
+    public static byte[] manifest(PackTrust trust, URI canonical, URI transport)
+            throws IOException {
         var connection = open(trust, canonical, transport);
         try (InputStream input = boundedTime(connection.getInputStream(), Duration.ofSeconds(60))) {
             byte[] bytes = input.readNBytes(8 * 1024 * 1024 + 1);
-            if (bytes.length > 8 * 1024 * 1024) throw new IOException("Manifest exceeds size limit");
+            if (bytes.length > 8 * 1024 * 1024)
+                throw new IOException("Manifest exceeds size limit");
             return bytes;
-        } finally { connection.disconnect(); }
+        } finally {
+            connection.disconnect();
+        }
     }
-    public static void file(PackTrust trust, StagedInstaller.Stage stage, ManifestFile file, URI transport) throws IOException {
+
+    public static void file(
+            PackTrust trust, StagedInstaller.Stage stage, ManifestFile file, URI transport)
+            throws IOException {
+        file(trust, stage, file, transport, null);
+    }
+
+    public static void file(
+            PackTrust trust,
+            StagedInstaller.Stage stage,
+            ManifestFile file,
+            URI transport,
+            ProgressListener listener)
+            throws IOException {
         var connection = open(trust, file.url(), transport);
-        try (InputStream input = boundedTime(connection.getInputStream(), Duration.ofMinutes(10))) {
+        try (InputStream input =
+                boundedTime(connection.getInputStream(), Duration.ofMinutes(10), listener)) {
             long length = connection.getContentLengthLong();
-            if (length >= 0 && length != file.size()) throw new IOException("Object length does not match signed manifest");
+            if (length >= 0 && length != file.size())
+                throw new IOException("Object length does not match signed manifest");
             stage.accept(file, input);
-        } finally { connection.disconnect(); }
+        } finally {
+            connection.disconnect();
+        }
     }
+
     private static InputStream boundedTime(InputStream source, Duration timeout) {
+        return boundedTime(source, timeout, null);
+    }
+
+    private static InputStream boundedTime(
+            InputStream source, Duration timeout, ProgressListener listener) {
         long deadline = System.nanoTime() + timeout.toNanos();
         return new FilterInputStream(source) {
             private void check() throws IOException {
-                if (Thread.currentThread().isInterrupted() || System.nanoTime() - deadline >= 0) throw new IOException("Download cancelled or timed out");
+                if (Thread.currentThread().isInterrupted() || System.nanoTime() - deadline >= 0)
+                    throw new IOException("Download cancelled or timed out");
             }
-            @Override public int read() throws IOException { check(); return super.read(); }
-            @Override public int read(byte[] b, int off, int len) throws IOException { check(); return in.read(b, off, len); }
+
+            @Override
+            public int read() throws IOException {
+                check();
+                int b = super.read();
+                if (b >= 0 && listener != null) listener.onBytes(1);
+                return b;
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                check();
+                int read = in.read(b, off, len);
+                if (read > 0 && listener != null) listener.onBytes(read);
+                return read;
+            }
         };
     }
 }

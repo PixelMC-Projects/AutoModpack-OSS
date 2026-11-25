@@ -28,8 +28,18 @@ class ServerAuthorizationTest {
         return manifest(release,sequence,pair,trust(pair),"mods/a.jar");
     }
     private VerifiedManifest manifest(String release,long sequence,KeyPair pair,PackTrust trust,String path) throws Exception {
+        return manifest(release, sequence, pair, trust, path, ReleaseChannel.STABLE);
+    }
+    private VerifiedManifest manifest(
+            String release,
+            long sequence,
+            KeyPair pair,
+            PackTrust trust,
+            String path,
+            ReleaseChannel channel)
+            throws Exception {
         JsonObject file = new JsonObject(); file.addProperty("path",path); file.addProperty("size",42); file.addProperty("sha256","0".repeat(64)); file.addProperty("url",OBJECT.resolve("/releases/"+release+"/"+path).toString());
-        JsonObject payload = new JsonObject(); payload.addProperty("schema",1);payload.addProperty("packId","test-pack");payload.addProperty("releaseId",release);payload.addProperty("sequence",sequence);
+        JsonObject payload = new JsonObject(); payload.addProperty("schema",1);payload.addProperty("packId","test-pack");payload.addProperty("releaseId",release);payload.addProperty("channel",channel.id());payload.addProperty("sequence",sequence);
         payload.addProperty("consentProtocolVersion",1);payload.addProperty("managementScopeVersion","scope-1");payload.addProperty("createdAt","2026-01-01T00:00:00Z");
         var files = new com.google.gson.JsonArray();files.add(file);payload.add("files",files);
         byte[] bytes = payload.toString().getBytes(StandardCharsets.UTF_8); Signature s = Signature.getInstance("Ed25519");s.initSign(pair.getPrivate());s.update(bytes);
@@ -160,5 +170,24 @@ class ServerAuthorizationTest {
             Map<String,String> expected=new TreeMap<>();vector.getAsJsonObject("expected").entrySet().forEach(e->expected.put(e.getKey(),e.getValue().getAsString()));
             assertEquals(expected,actual,vector.get("canonical").getAsString());
         }
+    }
+    @Test void dualChannelAuthorizerIsolatesStableAndPreviewSessions() throws Exception {
+        KeyPair pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        PackTrust trust = trust(pair);
+        VerifiedManifest stable = manifest("r1", 1, pair, trust, "mods/a.jar", ReleaseChannel.STABLE);
+        VerifiedManifest preview1 = manifest("p1", 1, pair, trust, "mods/p.jar", ReleaseChannel.PREVIEW);
+        VerifiedManifest preview2 = manifest("p2", 2, pair, trust, "mods/p2.jar", ReleaseChannel.PREVIEW);
+        DownloadAuthorizer auth = authorizer(new TestClock());
+        auth.activate(stable);
+        auth.activate(preview1);
+        var stableGrant = auth.issue(UUID.randomUUID(), "192.0.2.60", stable);
+        var previewGrant = auth.issue(UUID.randomUUID(), "192.0.2.61", preview1);
+        assertTrue(auth.accept(stableGrant.token()));
+        assertTrue(auth.accept(previewGrant.token()));
+        assertThrows(SecurityException.class, () -> auth.authorize(stableGrant.token(), "192.0.2.60", "p1", "mods/p.jar", preview1));
+        auth.activate(preview2);
+        // Updating preview invalidates only preview sessions; stable remains untouched.
+        assertNotNull(auth.authorize(stableGrant.token(), "192.0.2.60", "r1", "mods/a.jar", stable));
+        assertThrows(SecurityException.class, () -> auth.authorize(previewGrant.token(), "192.0.2.61", "p1", "mods/p.jar", preview1));
     }
 }

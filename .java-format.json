@@ -1,0 +1,7 @@
+{
+  "sources": [
+    "core/src/main/java/pl/skidam/automodpack_core/oss",
+    "src/main/java/pl/skidam/automodpack/client/oss"
+  ],
+  "exclude": []
+}

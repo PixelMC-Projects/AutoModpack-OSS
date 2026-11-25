@@ -229,5 +229,48 @@ class PublisherTest(unittest.TestCase):
             self.assertEqual({k.lower(): v for k, v in vector["expectedHeaders"].items()}, {k.lower(): v for k, v in actual.items()})
 
 
+    def test_preview_channel_builds_exports_and_activates_independently(self):
+        spec = json.loads(self.spec.read_text(encoding="utf-8"))
+        spec["channel"] = "preview"
+        spec["releaseId"] = "fixture-preview-1"
+        self.spec.write_text(json.dumps(spec), encoding="utf-8")
+        p.build(self.args)
+        release = self.root / "out/fixture-preview-1"
+        manifest = p.verify_envelope((release / "manifest.json").read_bytes(), p.load_public(self.public))
+        self.assertEqual("preview", manifest["channel"])
+        export = self.root / "activation/active-preview.json"
+        with patch.object(p, "OSS", side_effect=AssertionError("network forbidden")):
+            p.export_active(SimpleNamespace(release_dir=str(release), public_key=str(self.public), output=str(export)))
+        pin = json.loads(export.with_name("server-active-preview-release.json").read_bytes())
+        self.assertEqual("preview", pin["channel"])
+        raw = (release / "manifest.json").read_bytes()
+        body = (release / "files/mods/fixture.jar").read_bytes()
+        active_urls = []
+        active_preview = None
+        class MockOSS:
+            def __init__(self, endpoint, bucket, region):
+                pass
+            def request(self, method, url, data=None, **kwargs):
+                nonlocal active_preview
+                active_urls.append((method, url))
+                if method == "PUT":
+                    active_preview = data
+                    return b""
+                if url.endswith("/active-preview.json"):
+                    if active_preview is None:
+                        raise urllib.error.HTTPError(url, 404, "fixture", {}, None)
+                    return active_preview
+                return raw
+            def digest(self, url):
+                return len(body), hashlib.sha256(body).hexdigest()
+        args = SimpleNamespace(release_dir=str(release), public_key=str(self.public), endpoint="https://objects.example.test",
+                               bucket="fixture-bucket", region="cn-example", expected_active_sha256="absent")
+        with patch.object(p, "OSS", MockOSS):
+            p.activate(args)
+        self.assertEqual(raw, active_preview)
+        self.assertTrue(any(url.endswith("/active-preview.json") and method == "PUT" for method, url in active_urls))
+        self.assertFalse(any(url.endswith("/active.json") for _, url in active_urls))
+
+
 if __name__ == "__main__":
     unittest.main()

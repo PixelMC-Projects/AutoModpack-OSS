@@ -18,6 +18,7 @@ import pl.skidam.automodpack.networking.server.OssAuthenticationProof;
 /*? if >=1.20.2 {*/
 /*import pl.skidam.automodpack.networking.server.LoginRequestPayload;
 *//*?}*/
+import pl.skidam.automodpack_core.oss.ReleaseChannel;
 import pl.skidam.automodpack_core.oss.server.DownloadAuthorizer;
 import pl.skidam.automodpack_core.oss.server.OssServerRuntime;
 import java.net.InetSocketAddress;
@@ -32,6 +33,7 @@ public abstract class ServerLoginNetworkHandlerMixin {
     @Unique private long automodpack$deadline, automodpack$idleDeadline, automodpack$sessionExpiresAt;
     @Unique private OssAuthenticationProof.Identity automodpack$identity;
     @Unique private DownloadAuthorizer.Grant automodpack$grant;
+    @Unique private ReleaseChannel automodpack$channel = ReleaseChannel.STABLE;
     @Unique private String automodpack$nonce, automodpack$ip;
     @Unique private boolean automodpack$downloading;
 
@@ -56,10 +58,16 @@ public abstract class ServerLoginNetworkHandlerMixin {
         }
         try {
             automodpack$ip = remote.getAddress().getHostAddress();
-            automodpack$grant = runtime.issue(automodpack$identity.uuid(), automodpack$ip);
             automodpack$expected = AUTOMODPACK_OSS_QUERY;
             automodpack$deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(180);
-            JsonObject challenge = new JsonObject(); challenge.addProperty("schema", 1); challenge.addProperty("challenge", true); challenge.addProperty("packId", runtime.trust().packId());
+            JsonObject challenge = new JsonObject();
+            challenge.addProperty("schema", 1);
+            challenge.addProperty("challenge", true);
+            challenge.addProperty("packId", runtime.trust().packId());
+            com.google.gson.JsonArray channels = new com.google.gson.JsonArray();
+            channels.add(ReleaseChannel.STABLE.id());
+            if (runtime.hasPreview()) channels.add(ReleaseChannel.PREVIEW.id());
+            challenge.add("channels", channels);
             automodpack$send(automodpack$expected, challenge.toString().getBytes(StandardCharsets.UTF_8));
             ci.cancel();
         } catch (Exception e) { automodpack$finish(false); }
@@ -81,16 +89,42 @@ public abstract class ServerLoginNetworkHandlerMixin {
             String status = response.get("status").getAsString();
             if (automodpack$expected == AUTOMODPACK_OSS_QUERY && status.equals("challenge")) {
                 automodpack$nonce = response.get("nonce").getAsString();
-                byte[] offer = runtime.offer(automodpack$identity.uuid(), automodpack$identity.name(), automodpack$nonce, automodpack$grant, AUTOMODPACK_OSS_QUERY + 1);
-                automodpack$expected = AUTOMODPACK_OSS_QUERY + 1; automodpack$send(automodpack$expected, offer); return;
+                ReleaseChannel requested =
+                        response.has("channel") && response.get("channel").isJsonPrimitive()
+                                ? ReleaseChannel.parseOrFallback(response.get("channel").getAsString())
+                                : ReleaseChannel.STABLE;
+                automodpack$channel = runtime.resolveChannel(requested);
+                automodpack$grant =
+                        runtime.issue(automodpack$identity.uuid(), automodpack$ip, automodpack$channel);
+                byte[] offer =
+                        runtime.offer(
+                                automodpack$identity.uuid(),
+                                automodpack$identity.name(),
+                                automodpack$nonce,
+                                automodpack$grant,
+                                AUTOMODPACK_OSS_QUERY + 1,
+                                automodpack$channel);
+                automodpack$expected = AUTOMODPACK_OSS_QUERY + 1;
+                automodpack$send(automodpack$expected, offer);
+                return;
             }
-            if (automodpack$expected == AUTOMODPACK_OSS_QUERY + 1 && status.equals("accepted") && runtime.accept(automodpack$grant.token())) {
+            if (automodpack$expected == AUTOMODPACK_OSS_QUERY + 1
+                    && status.equals("accepted")
+                    && automodpack$grant != null
+                    && runtime.accept(automodpack$grant.token())) {
                 automodpack$downloading = true;
                 automodpack$sessionExpiresAt = java.time.Instant.now().getEpochSecond() + runtime.sessionLifetimeSeconds();
                 automodpack$idleDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60);
                 automodpack$deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(runtime.sessionLifetimeSeconds());
                 automodpack$expected++;
-                automodpack$send(automodpack$expected, runtime.downloadReady(automodpack$nonce, automodpack$expected, "download", automodpack$sessionExpiresAt));
+                automodpack$send(
+                        automodpack$expected,
+                        runtime.downloadReady(
+                                automodpack$nonce,
+                                automodpack$expected,
+                                "download",
+                                automodpack$sessionExpiresAt,
+                                automodpack$channel));
                 return;
             }
             if (automodpack$downloading) {
@@ -99,12 +133,26 @@ public abstract class ServerLoginNetworkHandlerMixin {
                 automodpack$idleDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60);
                 if (status.equals("keepalive")) {
                     automodpack$expected++;
-                    automodpack$send(automodpack$expected, runtime.downloadReady(automodpack$nonce, automodpack$expected, "keepalive", automodpack$sessionExpiresAt));
+                    automodpack$send(
+                            automodpack$expected,
+                            runtime.downloadReady(
+                                    automodpack$nonce,
+                                    automodpack$expected,
+                                    "keepalive",
+                                    automodpack$sessionExpiresAt,
+                                    automodpack$channel));
                     return;
                 }
                 if (status.equals("file")) {
-                    byte[] answer = runtime.downloadMessage(automodpack$grant.token(), automodpack$ip, automodpack$nonce,
-                            response.get("releaseId").getAsString(), response.get("path").getAsString(), automodpack$expected + 1);
+                    byte[] answer =
+                            runtime.downloadMessage(
+                                    automodpack$grant.token(),
+                                    automodpack$ip,
+                                    automodpack$nonce,
+                                    response.get("releaseId").getAsString(),
+                                    response.get("path").getAsString(),
+                                    automodpack$expected + 1,
+                                    automodpack$channel);
                     automodpack$expected++; automodpack$send(automodpack$expected, answer); return;
                 }
                 automodpack$finish(false);
