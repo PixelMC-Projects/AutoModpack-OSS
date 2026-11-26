@@ -3,18 +3,19 @@ package pl.skidam.automodpack_core.oss;
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 
 /** Bounded JSON with duplicate-member rejection; signed bytes are never reserialized. */
-final class StrictJson {
-    static final int MAX_BYTES = 8 * 1024 * 1024;
+public final class StrictJson {
+    public static final int MAX_BYTES = 8 * 1024 * 1024;
     static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
 
     private StrictJson() {}
 
-    static JsonObject object(byte[] bytes) throws IOException {
+    public static JsonObject object(byte[] bytes) throws IOException {
         if (bytes.length > MAX_BYTES) throw new IOException("JSON exceeds limit");
         var decoder = StandardCharsets.UTF_8.newDecoder();
         try (var reader =
@@ -75,14 +76,21 @@ final class StrictJson {
         };
     }
 
-    static String string(JsonObject o, String name) throws IOException {
+    public static String string(JsonObject o, String name) throws IOException {
         JsonElement e = o.get(name);
         if (e == null || !e.isJsonPrimitive() || !e.getAsJsonPrimitive().isString())
             throw new IOException("Missing/invalid " + name);
         return e.getAsString();
     }
 
-    static long number(JsonObject o, String name) throws IOException {
+    public static boolean bool(JsonObject o, String name) throws IOException {
+        JsonElement e = o.get(name);
+        if (e == null || !e.isJsonPrimitive() || !e.getAsJsonPrimitive().isBoolean())
+            throw new IOException("Missing/invalid " + name);
+        return e.getAsBoolean();
+    }
+
+    public static long number(JsonObject o, String name) throws IOException {
         JsonElement e = o.get(name);
         if (e == null || !e.isJsonPrimitive() || !e.getAsJsonPrimitive().isNumber())
             throw new IOException("Missing/invalid " + name);
@@ -93,13 +101,19 @@ final class StrictJson {
         }
     }
 
-    static JsonArray array(JsonObject o, String name) throws IOException {
+    public static JsonObject object(JsonObject o, String name) throws IOException {
+        JsonElement e = o.get(name);
+        if (e == null || !e.isJsonObject()) throw new IOException("Missing/invalid " + name);
+        return e.getAsJsonObject();
+    }
+
+    public static JsonArray array(JsonObject o, String name) throws IOException {
         JsonElement e = o.get(name);
         if (e == null || !e.isJsonArray()) throw new IOException("Missing/invalid " + name);
         return e.getAsJsonArray();
     }
 
-    static byte[] bytes(Object value) {
+    public static byte[] bytes(Object value) {
         return GSON.toJson(value).getBytes(StandardCharsets.UTF_8);
     }
 }

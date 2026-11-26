@@ -8,7 +8,7 @@ import java.util.*;
 
 /** A locally provisioned trust profile. Server hints cannot extend this profile. */
 public final class PackTrust {
-    private final String packId, identity;
+    private final String packId, identity, authorizationCertSha256;
     private final PublicKey publicKey, serverKey;
     private final URI manifestUrl, authorizationEndpoint;
     private final Set<String> allowedHosts, allowedRoots;
@@ -21,6 +21,7 @@ public final class PackTrust {
             String serverIdentityPublicKey,
             URI manifestUrl,
             URI authorizationEndpoint,
+            String authorizationCertSha256,
             Set<String> allowedHosts,
             Set<String> allowedRoots,
             long minimumSequence)
@@ -51,8 +52,41 @@ public final class PackTrust {
         this.minimumSequence = minimumSequence;
         this.manifestUrl = manifestUrl;
         validateUrl(manifestUrl);
-        if (authorizationEndpoint != null) validateHttps(authorizationEndpoint, false);
+        if (authorizationEndpoint != null)
+            validateHttpsEndpoint(authorizationEndpoint, false, true);
         this.authorizationEndpoint = authorizationEndpoint;
+        if (authorizationCertSha256 != null && !authorizationCertSha256.isBlank()) {
+            String normalized = authorizationCertSha256.trim().toLowerCase(Locale.ROOT);
+            if (!normalized.matches("[0-9a-f]{64}"))
+                throw new IOException("Invalid authorizationCertSha256");
+            this.authorizationCertSha256 = normalized;
+        } else {
+            this.authorizationCertSha256 = null;
+        }
+    }
+
+    public PackTrust(
+            String packId,
+            String identity,
+            String publicKey,
+            String serverIdentityPublicKey,
+            URI manifestUrl,
+            URI authorizationEndpoint,
+            Set<String> allowedHosts,
+            Set<String> allowedRoots,
+            long minimumSequence)
+            throws IOException {
+        this(
+                packId,
+                identity,
+                publicKey,
+                serverIdentityPublicKey,
+                manifestUrl,
+                authorizationEndpoint,
+                null,
+                allowedHosts,
+                allowedRoots,
+                minimumSequence);
     }
 
     public PackTrust(
@@ -87,13 +121,20 @@ public final class PackTrust {
     }
 
     static void validateHttps(URI uri, boolean allowQuery) throws IOException {
+        validateHttpsEndpoint(uri, allowQuery, false);
+    }
+
+    static void validateHttpsEndpoint(URI uri, boolean allowQuery, boolean allowCustomPort)
+            throws IOException {
         if (uri == null
                 || !"https".equals(uri.getScheme())
                 || uri.getHost() == null
                 || uri.getUserInfo() != null
                 || uri.getFragment() != null
                 || (!allowQuery && uri.getRawQuery() != null)
-                || (uri.getPort() != -1 && uri.getPort() != 443)
+                || (allowCustomPort
+                        ? (uri.getPort() != -1 && (uri.getPort() < 1 || uri.getPort() > 65535))
+                        : (uri.getPort() != -1 && uri.getPort() != 443))
                 || uri.getRawPath() == null
                 || !uri.getRawPath().startsWith("/")
                 || !uri.normalize().getRawPath().equals(uri.getRawPath())
@@ -123,15 +164,20 @@ public final class PackTrust {
             throw new IOException("Manifest does not match the pinned immutable release location");
     }
 
+    private static int normalizedPort(URI uri) {
+        return uri.getPort() == -1 ? 443 : uri.getPort();
+    }
+
     private static boolean sameEndpoint(URI first, URI second) {
         return first.getHost().equalsIgnoreCase(second.getHost())
+                && normalizedPort(first) == normalizedPort(second)
                 && first.getRawPath().equals(second.getRawPath());
     }
 
     public void validateAuthorizationEndpoint(URI hint) throws IOException {
         if (authorizationEndpoint == null)
             throw new IOException("No HTTP authorization endpoint is provisioned");
-        validateHttps(hint, false);
+        validateHttpsEndpoint(hint, false, true);
         if (!sameEndpoint(authorizationEndpoint, hint))
             throw new IOException("Authorization endpoint is not provisioned");
     }
@@ -174,6 +220,10 @@ public final class PackTrust {
 
     public URI authorizationEndpoint() {
         return authorizationEndpoint;
+    }
+
+    public String authorizationCertSha256() {
+        return authorizationCertSha256;
     }
 
     public Set<String> allowedHosts() {

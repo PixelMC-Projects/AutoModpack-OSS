@@ -1,17 +1,19 @@
 package pl.skidam.automodpack_loader_core;
 
-import java.nio.file.Path;
+import static pl.skidam.automodpack_core.GlobalVariables.*;
+
 import pl.skidam.automodpack_core.config.Jsons;
-import pl.skidam.automodpack_core.oss.TrustStore;
+import pl.skidam.automodpack_core.loader.LoaderManagerService;
 import pl.skidam.automodpack_core.oss.StagedInstaller;
+import pl.skidam.automodpack_core.oss.TrustStore;
 import pl.skidam.automodpack_core.oss.client.ConsentStore;
 import pl.skidam.automodpack_core.oss.client.StartupNotice;
-import pl.skidam.automodpack_core.loader.LoaderManagerService;
 import pl.skidam.automodpack_core.utils.FileInspection;
 import pl.skidam.automodpack_core.utils.JarUtils;
 import pl.skidam.automodpack_loader_core.loader.LoaderManager;
 import pl.skidam.automodpack_loader_core.mods.ModpackLoader;
-import static pl.skidam.automodpack_core.GlobalVariables.*;
+
+import java.nio.file.Path;
 
 /** Offline only. Invoked before Forge scans any mod candidates. */
 public final class Preload {
@@ -41,11 +43,24 @@ public final class Preload {
                     StagedInstaller.applyPending(
                             gameRoot, trust, consents::hasAnyGrant, consents.channel());
             LOGGER.info("OSS offline pre-load installation: {}", result.status());
+            if (result.status() != StagedInstaller.Status.CONFLICT) {
+                try {
+                    var prelaunch = PrelaunchBootstrap.runIfConfigured(gameRoot, trust, consents);
+                    if (prelaunch.applyResult() != null) {
+                        result = prelaunch.applyResult();
+                    }
+                } catch (Exception prelaunchFailure) {
+                    LOGGER.warn(
+                            "OSS pre-launch sync skipped due to error: {}",
+                            prelaunchFailure.getMessage());
+                }
+            }
             try {
                 StartupNotice.record(gameRoot, result);
             } catch (java.io.IOException noticeFailure) {
                 LOGGER.warn(
-                        "OSS startup notice could not be persisted; current outcome remains visible in settings");
+                        "OSS startup notice could not be persisted; current outcome remains visible"
+                            + " in settings");
             }
         } catch (Exception failure) {
             throw new IllegalStateException(

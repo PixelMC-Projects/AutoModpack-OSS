@@ -1,13 +1,17 @@
 package pl.skidam.automodpack_core.oss;
 
 import com.google.gson.*;
+
 import java.io.*;
 import java.nio.channels.*;
 import java.nio.file.*;
 import java.security.*;
 import java.util.*;
 
-/** Download while playing; apply only from a caller's pre-mod-load bootstrap hook. Never launches/restarts. */
+/**
+ * Download while playing; apply only from a caller's pre-mod-load bootstrap hook. Never
+ * launches/restarts.
+ */
 public final class StagedInstaller {
     private static final String DIR = ".automodpack-oss";
 
@@ -22,6 +26,23 @@ public final class StagedInstaller {
     }
 
     public record ApplyResult(Status status, String message) {}
+
+    public record InstalledSummary(long sequence, String payloadDigest, ReleaseChannel channel) {}
+
+    public static InstalledSummary installedSummary(Path gameRoot, String packId)
+            throws IOException {
+        SafePaths.checkChain(gameRoot);
+        Path internal = SafePaths.child(gameRoot, DIR);
+        if (!Files.exists(internal, LinkOption.NOFOLLOW_LINKS))
+            return new InstalledSummary(0L, "", ReleaseChannel.STABLE);
+        JsonObject packs = map(state(internal), "packs");
+        if (!packs.has(packId)) return new InstalledSummary(0L, "", ReleaseChannel.STABLE);
+        var metadata = packs.getAsJsonObject(packId);
+        return new InstalledSummary(
+                StrictJson.number(metadata, "sequence"),
+                StrictJson.string(metadata, "payloadDigest"),
+                storedChannel(metadata));
+    }
 
     private interface Work<T> {
         T run(Path internal) throws IOException;
@@ -468,7 +489,8 @@ public final class StagedInstaller {
                         Files.delete(pending);
                         return new ApplyResult(
                                 Status.CONSENT_REQUIRED,
-                                "Local management consent was revoked or is unavailable; staged files retained without applying");
+                                "Local management consent was revoked or is unavailable; staged"
+                                    + " files retained without applying");
                     }
                     checkSequence(internal, manifest, false);
                     JsonObject consent = readObject(SafePaths.child(stage, "consent.json"));
@@ -580,7 +602,8 @@ public final class StagedInstaller {
                         if (committed)
                             return new ApplyResult(
                                     Status.APPLIED,
-                                    "Signed release committed; journal cleanup completed by recovery");
+                                    "Signed release committed; journal cleanup completed by"
+                                        + " recovery");
                         throw new IOException("Installation failed and was rolled back", failure);
                     }
                 });

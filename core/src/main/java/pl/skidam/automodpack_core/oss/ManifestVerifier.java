@@ -1,6 +1,7 @@
 package pl.skidam.automodpack_core.oss;
 
 import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.*;
@@ -14,7 +15,7 @@ public final class ManifestVerifier {
 
     private ManifestVerifier() {}
 
-    static String token(String value) throws IOException {
+    public static String token(String value) throws IOException {
         if (value == null || !value.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,95}"))
             throw new IOException("Invalid identity/version token");
         return value;

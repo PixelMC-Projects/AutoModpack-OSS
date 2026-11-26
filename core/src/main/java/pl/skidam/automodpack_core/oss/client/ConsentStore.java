@@ -1,15 +1,18 @@
 package pl.skidam.automodpack_core.oss.client;
 
 import com.google.gson.Gson;
+
 import pl.skidam.automodpack_core.oss.ReleaseChannel;
-import pl.skidam.automodpack_core.oss.VerifiedManifest;
 import pl.skidam.automodpack_core.oss.SafePaths;
+import pl.skidam.automodpack_core.oss.VerifiedManifest;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
 /** Local user decisions. No key or permission is ever accepted from a game server. */
 public final class ConsentStore {
+    public static final UUID PRELAUNCH_INSTANCE_ACCOUNT = new UUID(0L, 0L);
     private static final Gson JSON = new Gson();
     private final Path file;
     private State state;
@@ -73,7 +76,13 @@ public final class ConsentStore {
     public synchronized boolean permits(VerifiedManifest manifest, UUID account) {
         return state.enabled
                 && permitsChannel(manifest.channel())
-                && state.grants.contains(ConsentGrant.forManifest(manifest, account));
+                && (state.grants.contains(ConsentGrant.forManifest(manifest, account))
+                        || state.grants.contains(
+                                ConsentGrant.forManifest(manifest, PRELAUNCH_INSTANCE_ACCOUNT)));
+    }
+
+    public synchronized void grantInstance(VerifiedManifest manifest) throws IOException {
+        grant(manifest, PRELAUNCH_INSTANCE_ACCOUNT);
     }
 
     public synchronized boolean hasAnyGrant(VerifiedManifest manifest) {

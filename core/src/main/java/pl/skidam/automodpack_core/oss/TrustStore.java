@@ -43,6 +43,9 @@ public final class TrustStore {
                                         ? URI.create(
                                                 StrictJson.string(item, "authorizationEndpoint"))
                                         : null,
+                                item.has("authorizationCertSha256")
+                                        ? StrictJson.string(item, "authorizationCertSha256")
+                                        : null,
                                 hosts,
                                 roots,
                                 StrictJson.number(item, "minimumSequence")));
